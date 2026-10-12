@@ -1,0 +1,92 @@
+<<<<OLD
+es button{height:56px}}
+/* arrival card */
+.arri
+====NEW
+es button{height:56px}}
+/* transitions */
+.veil{position:fixed;inset:0;z-index:54;background:#03050b;animation:veilin .25s ease-out}
+@keyframes veilin{from{opacity:0}to{opacity:1}}
+.scene.sc-out{animation:scout .22s ease-in forwards}
+@keyframes scout{to{opacity:0;transform:translateY(-6px)}}
+.scene.sc-in{animation:scin .38s ease-out}
+@keyframes scin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* join chip & toasts */
+.joinchip{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.joinchip b{font-family:var(--f-tech);font-size:11px;letter-spacing:.12em;color:var(--mint);margin-right:4px}
+.joinchip i{font-style:normal;width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--line2);font-family:var(--f-tech);font-size:11px}
+.joinchip i.on{background:var(--mint);border-color:var(--mint);color:#02040a}
+#toasts{position:fixed;right:16px;bottom:16px;z-index:90;display:grid;gap:8px;max-width:min(320px,calc(100vw - 32px))}
+.toast{background:#0b1a1a;border:1px solid var(--mint);border-left:4px solid var(--mint);padding:10px 14px;display:grid;gap:2px;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:tin .3s ease-out}
+.toast b{color:var(--mint);font-size:15px}.toast span{font-size:13px;color:var(--muted)}
+.toast.out{animation:tout .4s forwards}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes tout{to{opacity:0;transform:translateX(20px)}}
+@media (prefers-reduced-motion:reduce){.veil,.scene.sc-out,.scene.sc-in,.toast{animation:none}}
+/* arrival card */
+.arri
+>>>>END
+<<<<OLD
+e) return; done = true; w.classList.add('out'); setTimeout(() => w.remove(), 720); res(ok); };
+    w.querySelecto
+====NEW
+e) return; done = true; res(ok); setTimeout(() => { w.classList.add('out'); setTimeout(() => w.remove(), 720); }, opt.keep ? 900 : 0); };
+    w.querySelecto
+>>>>END
+<<<<OLD
+mote) : freshTeam(tid); if (!remote) save(true); renderStude
+====NEW
+mote) : freshTeam(tid); St.T.joinAt = now(); save(true); renderStude
+>>>>END
+<<<<OLD
+ction renderStudent() {
+  const app = $('#app'),
+====NEW
+ction renderStudent() {
+  if (St.swapPending) return;
+  const app = $('#app'),
+>>>>END
+<<<<OLD
+ion afterRender() { if ($('#dtxt')) typeLine(); 
+====NEW
+ion afterRender() { if (St.swapIn) { St.swapIn = false; const sc = document.querySelector('#app .scene'); if (sc) sc.classList.add('sc-in'); } if ($('#dtxt')) typeLine(); 
+>>>>END
+<<<<OLD
+urn; St.leaving = true; let played = false; if (feed) played = await playFeed(feed.key, feed); if (!played) await FX.warp(1800); const card = arriveCard(i); await card.shown; T.scene = i; T.step = i === 6 ? 'gate' : 'intro'; resetDevices(); save(true); renderStudent(); scrollTo(0,0); await card.close(); St.leaving = false; }
+function setStep(s) { St.T.step = s; St.dlgIdx = 0; St.msg = {}; St.blankSel = 0; save(); renderStudent(); }
+async function gran
+====NEW
+urn; St.leaving = true; const veil = document.createElement('div'); veil.className = 'veil'; document.body.appendChild(veil); St.swapPending = false; let played = false; if (feed) played = await playFeed(feed.key, Object.assign({keep:true}, feed)); if (!played) await FX.warp(1800); const card = arriveCard(i); await card.shown; T.scene = i; T.step = i === 6 ? 'gate' : 'intro'; resetDevices(); save(true); renderStudent(); scrollTo(0,0); veil.remove(); await card.close(); St.leaving = false; }
+function setStep(s) { St.T.step = s; St.dlgIdx = 0; St.msg = {}; St.blankSel = 0; save(); const sc = document.querySelector('#app .scene'); if (!sc || reduced || St.leaving) { renderStudent(); return; } St.swapPending = true; sc.classList.add('sc-out'); setTimeout(() => { St.swapPending = false; St.swapIn = true; renderStudent(); }, 220); }
+async function gran
+>>>>END
+<<<<OLD
+ore.onTeams(cls, t => { Tc.teams = t || {}; renderTeacher(true); }));
+}
+function clsSelect(
+====NEW
+ore.onTeams(cls, t => { checkJoins(t || {}); Tc.teams = t || {}; renderTeacher(true); updJoinChip(); }));
+}
+function checkJoins(t) {
+  const first = !Tc.joinSeen; Tc.joinSeen = Tc.joinSeen || {};
+  Object.keys(t).forEach(k => { const j = t[k] && (t[k].joinAt || t[k].createdAt) || 0, prev = Tc.joinSeen[k]; Tc.joinSeen[k] = j;
+    if (!first && j && j !== prev) toast(`${k.replace('t','')}모둠 ${prev ? '다시 접속했어요' : '접속했어요'}`, rosterOf(k).names || (t[k].name && t[k].name !== k.replace('t','') + '모둠' ? t[k].name : ''));
+  });
+}
+function joinedCount() { return teamList().length; }
+function joinChipHTML() { return `<span class="joinchip" id="joinchip" title="QR로 접속한 모둠"><b>접속 ${joinedCount()}/${TEAM_COUNT}</b>${Array.from({length:TEAM_COUNT},(_,k)=>`<i class="${Tc.teams['t'+(k+1)]?'on':''}">${k+1}</i>`).join('')}</span>`; }
+function updJoinChip() { const c = $('#joinchip'); if (c) c.outerHTML = joinChipHTML(); }
+function toast(title, sub) {
+  let box = $('#toasts'); if (!box) { box = document.createElement('div'); box.id = 'toasts'; box.setAttribute('aria-live','polite'); document.body.appendChild(box); }
+  const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = `<b>✔ ${esc(title)}</b>${sub ? `<span>${esc(sub)}</span>` : ''}`; box.appendChild(el); Sound.blip();
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 4200);
+}
+function clsSelect(
+>>>>END
+<<<<OLD
+모(이 기기만)'}</small></div>
+    <div class="tabs" r
+====NEW
+모(이 기기만)'}</small></div>${joinChipHTML()}
+    <div class="tabs" r
+>>>>END
