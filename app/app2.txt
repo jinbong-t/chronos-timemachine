@@ -1,0 +1,208 @@
+.pass .top{padding:10px 16px;border-bottom:1px solid var(--line2);font-family:var(--f-tech);letter-spacing:.24em;font-size:12px;color:var(--cyan)}
+.pass .mid{padding:14px 16px;display:grid;gap:8px}
+.teamgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:min(520px,100%)}
+.teamgrid button{padding:18px 0;border:1px solid var(--line2);background:var(--panel);font-family:var(--f-tech);font-weight:900;font-size:26px;color:var(--cyan);clip-path:var(--cut)}
+
+/* video feed */
+.vfeed{position:fixed;inset:0;z-index:65;background:#000;display:grid;place-items:center;animation:vin .35s}
+@keyframes vin{0%{opacity:0;filter:brightness(3) blur(4px)}100%{opacity:1;filter:none}}
+.vfeed.out{animation:vout .38s forwards}@keyframes vout{to{opacity:0;filter:brightness(3) blur(3px)}}
+.vfeed video{width:100%;height:100%;object-fit:contain;background:#000}
+.vfeed .vscan{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.6))}
+.vfeed .vhud{position:absolute;inset:14px;pointer-events:none;border:1px solid rgba(41,230,255,.3)}
+.vfeed .vhud::before,.vfeed .vhud::after{content:"";position:absolute;width:40px;height:40px;border:2px solid var(--cyan)}
+.vfeed .vhud::before{left:-1px;top:-1px;border-right:0;border-bottom:0}.vfeed .vhud::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
+.vfeed .vlabel{position:absolute;top:24px;left:30px;font-family:var(--f-tech);font-size:11px;letter-spacing:.26em;color:var(--cyan)}
+.vfeed .vlabel i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:8px;animation:car 1s steps(1) infinite}
+.vfeed .vsub{position:absolute;left:50%;bottom:10%;transform:translateX(-50%);width:min(900px,88%);background:rgba(2,4,9,.74);border-left:3px solid var(--amber);padding:10px 16px;font-size:clamp(16px,2.3vw,26px);line-height:1.45}
+.vfeed .vsub b{display:block;font-family:var(--f-tech);font-size:10px;letter-spacing:.22em;color:var(--amber);margin-bottom:2px}
+.vfeed .vskip{position:absolute;right:30px;bottom:26px}
+.cctv{position:relative;border:1px solid var(--line2);overflow:hidden;background:#000}
+.cctv video,.cctv img{display:block;width:100%;height:auto}
+.cctv .scanl{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0 1px,transparent 1px 3px)}
+.cctv .ctag{position:absolute;left:10px;top:8px;font-family:var(--f-tech);font-size:10px;letter-spacing:.2em;color:var(--red);text-shadow:0 0 6px #000}
+.cctv .ctag i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:6px;animation:car 1s steps(1) infinite}
+.twist{border:1px solid var(--line2);padding:14px;display:grid;gap:10px;background:rgba(4,8,18,.6)}
+.twist .q{font-size:19px;font-weight:700}
+.vote{display:grid;gap:10px;text-align:left;width:100%;max-width:880px;margin-top:8px}
+.vrow{display:grid;grid-template-columns:minmax(0,220px) 1fr 44px;gap:10px;align-items:center;font-size:16px}
+.vbar{height:14px;background:var(--line)}.vbar i{display:block;height:100%;background:var(--c,var(--cyan))}
+
+/* trick puzzles */
+.runes{display:grid;grid-template-columns:repeat(4,64px);gap:8px}
+.runes button{height:64px;border:1px solid var(--line2);background:radial-gradient(circle,#13213f,#060b18);font-size:30px;color:var(--cyan);text-shadow:0 0 10px var(--cyan);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.runes button:active{background:var(--c);color:#02040a}
+.cyl{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:6px;width:100%;max-width:640px}
+.cyl .col{display:grid;gap:6px}
+.cyl .cell{border:1px solid var(--line2);padding:10px 8px;text-align:center;font-size:14.5px;font-weight:600;background:var(--panel);transition:transform .25s,border-color .25s}
+.cyl .cell.era{background:transparent;color:var(--c)}
+.cyl .cell.hit{border-color:var(--mint);box-shadow:inset 0 0 12px rgba(61,255,168,.3)}
+.cyl .rot,.cyl .col>.lbl{display:flex;justify-content:center;align-items:center;gap:6px;height:32px}
+.cyl .rot button{border:1px solid var(--line2);background:#050a15;padding:4px 14px;color:var(--muted)}
+.deck{position:relative;width:min(420px,100%);height:210px;justify-self:center;touch-action:pan-y}
+.scard{position:absolute;inset:0;border:1px solid var(--c);background:linear-gradient(160deg,#121d3a,#070c19);padding:18px;display:grid;align-content:center;gap:8px;text-align:center;clip-path:var(--cut);transition:transform .35s,opacity .35s;user-select:none}
+.scard .t{font-family:var(--f-tech);font-size:11px;letter-spacing:.2em;color:var(--c)}
+.scard .s{font-size:20px;font-weight:700;line-height:1.4}
+.scard.L{transform:translateX(-130%) rotate(-14deg);opacity:0}.scard.R{transform:translateX(130%) rotate(14deg);opacity:0}
+.scard.bad{animation:shake .4s}
+.swbtns{display:flex;justify-content:space-between;width:min(420px,100%);justify-self:center}
+.sockets{display:grid;gap:10px;width:100%;max-width:640px}
+.sock{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line2);padding:10px 12px;background:rgba(4,8,18,.6)}
+.sock .plug{display:flex;align-items:center;gap:6px}
+.sock .plug b{min-width:150px;text-align:center;padding:8px 10px;border:1px dashed var(--c);font-family:var(--f-body);transition:transform .3s}
+.sock.in .plug b{border-style:solid;background:color-mix(in srgb,var(--c) 20%,transparent);transform:translateX(-6px)}
+.sock .plug button{border:1px solid var(--line2);background:#050a15;width:34px;height:34px;color:var(--muted)}
+.bench{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+.station{border:1px solid var(--line2);padding:12px;display:grid;gap:8px;background:rgba(4,8,18,.6)}
+.station.sel{border-color:var(--amber);box-shadow:0 0 14px rgba(255,178,46,.35)}
+.station.done{border-color:var(--mint)}
+.slots3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.slots3 span{min-height:44px;border:1px dashed var(--line2);display:grid;place-items:center;font-size:13px;padding:4px;text-align:center}
+.slots3 span.f{border-style:solid;border-color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent)}
+.pile{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.pile button{border:1px solid var(--line2);background:var(--panel);padding:7px 12px;font-weight:600;transform:rotate(var(--r,0deg))}
+.pile button:disabled{opacity:.25}
+
+/* teacher */
+.tshell{max-width:1240px;margin:0 auto;display:grid;gap:12px}
+.ttop{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line2);background:transparent;padding:8px 14px;font-weight:600}
+.tabs button[aria-selected=true]{background:rgba(41,230,255,.16);border-color:var(--cyan);color:var(--cyan)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px}
+.ctrl .ph{font-family:var(--f-mono);font-size:13px;color:var(--muted);margin-right:auto}
+.proj{min-height:72vh;display:grid;place-items:center;padding:24px;text-align:center;overflow:hidden}
+.projroute{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;width:100%;max-width:1000px;margin-top:18px}
+.projroute .col{border:1px solid var(--line2);border-top:3px solid var(--c);padding:10px;min-height:120px;text-align:left}
+.projroute .col b{display:block;font-family:var(--f-tech);font-size:11px;letter-spacing:.14em;color:var(--c)}
+.dot{display:inline-block;margin:4px 4px 0 0;padding:2px 9px;background:var(--c);color:#02040a;font-size:12.5px;font-weight:700}
+.dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.tcard{padding:12px 14px;display:grid;gap:8px;font-size:14px}
+.tcard header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tcard h3{margin:0;font-size:17px}
+.tag2{font-size:12px;font-weight:700;padding:2px 9px;border:1px solid var(--line2);color:var(--muted)}
+.tag2.ok{border-color:var(--mint);color:var(--mint)}.tag2.warn{border-color:var(--red);color:var(--red)}
+.rs{display:grid;gap:6px}
+.rs div{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;border-top:1px dashed var(--line2);padding-top:6px}
+.rs i{font-style:normal;font-family:var(--f-tech);font-size:10px;color:var(--muted)}
+.star{border:0;background:none;color:var(--muted);font-size:16px;padding:0 4px}.star[aria-pressed=true]{color:var(--amber)}
+.credits{animation:roll 40s linear forwards;display:grid;gap:22px}
+@keyframes roll{from{transform:translateY(60vh)}to{transform:translateY(-110%)}}
+.notice{font-size:13.5px;color:var(--muted);border:1px dashed var(--line2);padding:10px 12px}
+
+@media (max-width:920px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:static;grid-template-columns:1fr 1fr}
+  .rail .routebox{grid-column:1 / -1}
+  .split{grid-template-columns:1fr}
+  .tl{grid-template-columns:repeat(3,minmax(0,1fr))}.tl::before{display:none}
+  .projroute{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .rail{grid-template-columns:1fr}
+  .choices{grid-template-columns:1fr}
+  .wires{gap:10px 34px}
+  .shead{grid-template-columns:1fr}.shead .unit{grid-column:1;grid-row:auto;text-align:left}
+  .kp{grid-template-columns:repeat(3,56px)}
+}
+
+@media(max-width:560px){.cyl .cell{font-size:12.5px;padding:8px 4px}.sock{grid-template-columns:1fr}.sock .plug b{min-width:0;flex:1}.bench{grid-template-columns:1fr}.runes{grid-template-columns:repeat(4,56px)}.runes button{height:56px}}
+</style>
+
+<div id="fx-scan" aria-hidden="true"></div>
+<canvas id="fx-warp" aria-hidden="true"></canvas>
+<div id="fx-flash" aria-hidden="true"></div>
+<div id="app"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   설정 (배포 전에 여기만 바꾸면 됩니다)
+   ========================================================= */
+const FIREBASE_CONFIG = null;             // Firebase 웹앱 설정 객체. null이면 데모 모드(한 기기 안 탭끼리만 연동)
+const SCHOOL = '우리 학교';               // 이야기에 나오는 학교 이름
+const TEACHER_PIN = '1234';               // 교사 화면 잠금 번호
+const GAME_SEC = 35 * 60;                 // 게임 제한 시간
+const DEADLINE_MIN = {1:6, 2:13, 3:21, 4:28, 5:35};
+const EXTRA = {1:true, 2:true, 3:true, 4:true, 5:true};   // 장면별 추가 트릭 퍼즐 켜기/끄기 (시간이 빠듯하면 false)
+const TEAM_COUNT = 8;
+const NOW_YEAR = new Date().getFullYear();
+const CODES = {coord:'3500', issue:'1011', keyword:'인간중심', checksum:3, final:'5432'};
+const COORD_SPOT = '교탁';               // 좌표 카드 숨길 곳: '교탁' | '교사 책상' | '시간표' | '벽시계'
+/* 영상: index.html 옆 media 폴더에 넣는다. 없으면(null) 기본 효과만 나온다. */
+const MEDIA = {
+  opening:'media/v1_opening.mp4',   // 교사 스크린 ① 오프닝
+  warpPast:'media/v2_warp_past.mp4',// S#1 → S#2 워프
+  hall:'media/v3_hall_panel.mp4',   // S#2 관문 감시 카메라(반복 재생)
+  door:'media/v4_door_open.mp4',    // S#2 → S#3 문 열림
+  bus:null,                         // S#3 버스 경보 (예: 'media/v5_bus_alarm.mp4')
+  power:null,                       // S#3 → S#4 전력 저하
+  village:null,                     // S#4 → S#5 마을 도착
+  launch:null                       // 교사 스크린 ④ 발사
+};
+
+const SPOTS = {'교탁':['크로노스의 조종석(교탁) 아래','교탁 안쪽 윗판 아래'],'교사 책상':['크로노스의 지휘석(교사 책상) 위','교사 책상 위'],'시간표':['이 교실의 ‘시간을 알려 주는 종이’ 뒤','학급 시간표 뒤'],'벽시계':['이 교실의 ‘시간을 재는 기계’ 아래','벽시계 아래']};
+const SPOT = SPOTS[COORD_SPOT] || SPOTS['교탁'];
+const RUNE_SYMS = ['★','●','■','▲','◆','✚','⬢','☾'], RUNE_CODE = '★●■▲';
+const CYL = {eras:['농업 사회','산업 사회','정보 사회','지능정보 사회'], change:['정착해서 농사를 짓다','공장에서 대량 생산','인터넷으로 정보를 나누다','AI가 판단을 돕다'], tech:['쟁기·바퀴','증기기관','컴퓨터·인터넷','생성형 AI'], start:[2,1]};
+const SWIPE = [['스마트 안경','길을 걸으며 눈앞에 길 안내가 뜬다','G'],['스마트 안경','지나가는 사람의 얼굴이 몰래 찍힐 수 있다','W'],['배달 드론','산골 마을에도 약이 20분 만에 도착한다','G'],['배달 드론','배달 기사의 일자리가 줄어든다','W'],['AI 의사','한밤중에도 바로 진단을 받을 수 있다','G'],['AI 의사','진단이 틀리면 누구 책임인지 불분명하다','W']];
+const PARTS = [['A4 용지를 반으로 접으면?',['A3 (297×420mm)','A5 (148×210mm)','B5 (182×257mm)'],1],['우리나라 산업 표준 마크는?',['KS','CE','UL'],0],['휴대폰·노트북 공통 충전 단자 국제 표준은?',['라이트닝','USB-C','마이크로 5핀'],1]];
+const ASM = {fridge:{name:'항아리 냉장고', need:['큰 진흙 항아리','작은 진흙 항아리','젖은 모래']}, bulb:{name:'페트병 전구', need:['빈 페트병','물','표백제 약간']}};
+const ASM_DECOY = ['전기 모터','리튬 배터리','반도체 칩','냉매 가스'];
+const TWISTS = [
+  {key:'self', q:'조건 변경 ① · 그 버스의 승객이 바로 너라면?', sub:'승객이 우리 모둠원이라면 AI는 어떻게 판단해야 할까?', opts:[['A','A · 그대로 직진 (승객 보호)'],['B','B · 방향 전환 (보행자 보호)']]},
+  {key:'buyMe', q:'조건 변경 ② · 버스를 고를 수 있다면?', sub:'버스 회사가 두 가지 모드를 판다. 너는 어떤 버스를 타고 싶나?', opts:[['P','승객 보호 우선 버스'],['W','보행자 보호 우선 버스']], key2:'buyOthers', q2:'그럼 다른 사람들은 어떤 버스를 탔으면 좋겠나?'},
+  {key:'who', q:'조건 변경 ③ · 이 판단 규칙은 누가 정해야 할까?', sub:'한 가지를 고르고, 모둠원과 이유를 나눠 보세요.', opts:[['회사','자동차 회사'],['법','국회·정부의 법'],['탑승자','버스를 타는 사람'],['시민','시민 토론과 투표']]}
+];
+const CHIP = {1:'5',2:'4',3:'인간중심',4:'3',5:'2'};
+const PLACE = {1:'크로노스 연구소',2:'기술 역사관',3:'2050 자율주행 도시',4:'규격 혼란 창고',5:'도움이 필요한 마을',6:'귀환 게이트'};
+const TAG = {1:'S#1 · DEPART',2:'S#2 · PAST',3:'S#3 · FUTURE',4:'S#4 · PRESENT',5:'S#5 · GLOBAL',6:'S#6 · RETURN'};
+const KTAG = {1:'출발',2:'과거',3:'미래',4:'현재',5:'지구촌',6:'귀환'};
+const UNIT = {1:'4-1 기술의 이해',2:'4-2-1 기술의 발달과 사회 변화',3:'4-2-2 미래의 기술과 사회 변화',4:'4-3-1 기술의 표준화',5:'4-3-4 적정기술의 활용',6:'단원 정리'};
+const WHEN = {1:NOW_YEAR+'년',2:'기원전 3500년',3:'2050년',4:NOW_YEAR+'년',5:'지구 반대편',6:NOW_YEAR+'년 '+SCHOOL+' 기술실'};
+
+const LINES = {
+  1:{intro:[['teki','부팅 완료. 저는 시간 여행 장치 ‘크로노스’의 AI, 테키입니다. 크로노스(Chronos)는 그리스어로 ‘시간’을 뜻합니다.'],['teki','항법 오류. ‘기술’로 분류된 것만 싣고 갈 수 있는데 데이터가 엉켰습니다. 무지개는 기술인가요? 안경은 자연인가요? 저에게 다시 가르쳐 주십시오.']],
+     done:[['teki','이해했습니다. 기술은 사람이 필요를 채우려고 만든 도구와 방법이군요.'],['teki','항법 장치를 재부팅하려면 ‘기술이 만들어지는 순서’대로 기호를 입력해야 합니다. 교실 뒤 포스터의 그림마다 기호가 숨어 있습니다.']]},
+  2:{intro:[['teki','과거에 도착했습니다. 인류의 기술 역사관입니다. 기술은 하나씩 따로 생겨나니 순서는 중요하지 않다고 판단해 제가 섞어 두었습니다.'],['teki','그리고 증기기관은 매연을 만든 해로운 기술이라 삭제 대기 목록에 넣었습니다.']],
+     done:[['teki','증기기관이 공장을, 공장이 도시를 만들었군요. 기술은 이어져 있고, 좋은 점과 나쁜 점이 함께 있습니다. 삭제 목록을 취소합니다.'],['teki','2050 전시실로 가는 통로에 ‘시대 정렬 실린더’가 있습니다. 시대, 사회 변화, 대표 기술을 한 줄로 맞추십시오. 창문 위 연표 띠가 단서입니다.']]},
+  3:{intro:[['teki','2050년 서울에 도착했습니다. 운전석 없는 버스가 도시를 달립니다.'],['teki','크로노스 시동 키워드는 암호통(크립텍스)에 잠겨 있습니다. 손에 든 미래일보에 해독 단서가 있습니다.']],
+     alarm:[['teki','긴급 상황. 제가 지금 시내버스 7번의 운행 AI에 연결되었습니다. 브레이크 고장.'],['teki','직진하면 무단횡단 중인 보행자 3명이, 방향을 틀면 버스 승객 1명이 다칩니다.'],['teki','크로노스가 시간을 멈췄습니다. 저는 계산은 할 수 있지만, 무엇이 옳은지는 계산할 수 없습니다. 여러분이 정해 주십시오.']],
+     done:[['teki','모둠마다 선택은 달랐지만, 모두 누군가의 생명과 책임을 먼저 생각했습니다. 기술의 판단 기준은 사람이 함께 정해야 하는군요.'],['teki','경고. 크로노스 전력 저하. 부품이 맞지 않습니다. 현재로 돌아가 예비 부품을 구해야 합니다.']]},
+  4:{intro:[['teki',NOW_YEAR+'년, 크로노스 부품 창고. 모든 부품을 다르게 만들면 더 창의적이라고 판단해 제가 표준 데이터를 지웠더니, 나사도 플러그도 하나도 맞지 않습니다.'],['teki','필요한 부품 상자의 바코드도 끝자리가 찢어졌습니다. 상자 금고의 다이얼이 체크디짓을 요구합니다.']],
+     done:[['teki','표준은 창의성을 막는 게 아니라 서로 연결되게 해 주는군요.'],['teki','엔지니어는 부품 파우치(자물쇠 127)에서 한 박사의 편지를 꺼내십시오. 편지 뒷면의 부품 규격 목록대로 부품을 끼워야 크로노스가 다시 켜집니다.']]},
+  5:{intro:[['teki','지구 반대편 마을에 도착했습니다. 교실 세계지도의 핀이 빛나고 있습니다.'],['teki','간단합니다. 모든 마을에 최신 고가 정수 플랜트를 연결하면 됩니다!'],['vil','그 기계는 전기가 있어야 돌아간다면서요? 우리 마을엔 전기가 없고, 고장 나면 고칠 사람도 없어요. 우리에게 맞는 걸 이어 주세요.']],
+     done:[['teki','가장 좋은 기술은 가장 비싼 기술이 아니라, 그곳 사람에게 맞는 기술이군요.'],['teki','모든 칩 회수. 귀환 게이트를 엽니다. 시동 레버를 맞추고 점화 버튼을 길게 누르십시오.']]}
+};
+const HINT = {
+  1:['교실 뒤 게시판의 ‘우리 생활 속 기술’ 포스터를 보세요.','사람이 만들지 않은 것이 2개, 사람이 ‘알아낸’ 것이 1개 있어요.'],
+  2:['창문 위 연표 띠를 보세요. 그림이 시대를 알려 줘요.','증기기관은 3번째예요. 산업혁명을 연 기술이에요.'],
+  3:['칠판 구석 ‘오늘의 한 마디’를 읽어 보세요.','1면 본문에서 혼자 진하고 글씨체가 다른(고딕체) 글자만 순서대로 읽어요. 네 글자이고, 오늘의 한 마디와 이어져요.'],
+  4:['칠판 옆 메모(×1 ×3 …)를 보세요.','홀수 자리 합은 28, 짝수 자리 합은 33이에요. 28 + 33×3 = ? 그다음 10의 배수까지 얼마가 남는지 보세요.'],
+  5:['교실 세계지도에 꽂힌 여행 엽서를 뒤집어 보세요.','전기와 전문 기술자가 필요한 기술은 어느 마을에도 맞지 않아요.']
+};
+/* 빈칸 문장: parts에서 숫자는 빈칸 번호. bank는 떠다니는 보기(오답 포함). */
+const WB = {
+  1:{parts:['우리가 ‘기술’로 분류한 기준은 ',0,'#이가 ',1,'#을를 채우려고 ',2,' 것인지였다.'], bank:['사람','필요','만든','자연','원리','발견한','저절로 생긴','과학자','우연'], ans:[['사람'],['필요'],['만든']]},
+  2:{parts:['',0,'#은는 ',1,'#을를 바꾸었고, 그 결과 ',2,'#이가 생겼다.'], bank:['증기기관','금속활자','인터넷','물건 만드는 방식','지식을 전하는 방식','정보를 나누는 방식','공장과 도시','책의 대중화','정보 사회','무지개','만유인력'], groups:[['증기기관','물건 만드는 방식','공장과 도시'],['금속활자','지식을 전하는 방식','책의 대중화'],['인터넷','정보를 나누는 방식','정보 사회']]},
+  3:{parts:['왜냐하면 ',0,' 때문이다. 하지만 ',1,' 문제는 남는다.'], bank:['더 많은 생명을 지킬 수 있기','규칙을 지킨 승객을 보호해야 하기','AI가 일부러 사람 쪽으로 방향을 틀면 안 되기','누구도 다치지 않을 방법을 먼저 찾아야 하기','승객 1명의 안전','무단횡단한 사람의 생명','사고 책임을 누가 지는지','다수가 항상 옳은지']},
+  4:{parts:['만약 ',0,' 표준이 없다면 ',1,' 불편이 생긴다.'], bank:['충전 단자','바코드','나사 크기','종이 규격','기기마다 다른 충전기를 들고 다녀야 하는','계산대에서 상품을 읽지 못하는','부품을 바꿔 끼울 수 없는','복사기에 종이가 맞지 않는'], groups:[['충전 단자','기기마다 다른 충전기를 들고 다녀야 하는'],['바코드','계산대에서 상품을 읽지 못하는'],['나사 크기','부품을 바꿔 끼울 수 없는'],['종이 규격','복사기에 종이가 맞지 않는']]},
+  5:{parts:['',0,'#은는 ',1,'에 적정하다. 왜냐하면 ',2,' 때문이다.'], bank:['Q드럼','라이프스트로','항아리 냉장고','페트병 전구','물을 길어 오는 마을','더러운 물만 있는 마을','전기 없이 음식을 보관하는 마을','낮에도 캄캄한 집','값이 싸고 쉽게 쓸 수 있기','그 지역 재료로 만들 수 있기','전기 없이도 작동하기','최신 기술이기','비싸서 성능이 좋기'], groups:[['Q드럼','물을 길어 오는 마을'],['라이프스트로','더러운 물만 있는 마을'],['항아리 냉장고','전기 없이 음식을 보관하는 마을'],['페트병 전구','낮에도 캄캄한 집']], bad:['최신 기술이기','비싸서 성능이 좋기']}
+};
+const R1 = [['돌도끼','기술'],['안경','기술'],['만유인력 발견','과학'],['번개','자연'],['냉장고','기술'],['김치 발효 저장법','기술'],['무지개','자연'],['스마트폰','기술']];
+const R2 = [{n:'바퀴',y:'기원전 3500년경'},{n:'금속활자',y:'1377년 직지'},{n:'증기기관',y:'1769년 와트 개량'},{n:'전기(전등)',y:'1879년 백열전구'},{n:'인터넷',y:'1990년대 웹'},{n:'생성형 AI',y:'2020년대'}];
+const R2_START = [5,2,0,4,1,3];
+const CRYPT = [['미','인','데','기','로','사','전','자'],['래','술','간','봇','이','람','기','율'],['도','공','계','중','터','시','주','심'],['존','행','기','시','심','래','술','간']];
+const VIL = [['물을 멀리서 길어 와야 하는 마을',1],['더러운 물밖에 없는 마을',3],['전기 없이 음식을 보관해야 하는 마을',4],['창문이 없어 낮에도 캄캄한 집',5]];
+const TECH = [[1,'Q드럼','굴려서 옮기는 물통'],[2,'고가 정수 플랜트','전기와 전문 기술자 필요'],[3,'라이프스트로','빨대형 휴대 정수기'],[4,'항아리 냉장고','항아리 두 개와 젖은 모래'],[5,'페트병 전구','물 담은 페트병으로 햇빛을 실내에']];
+const BLAME = ['버스 제조사','AI 프로그래머','버스 승객','정부·법','잘 모르겠다'];
+const MAPT = [['달 기지',50,14],['지구 반대편 마을',72,62],['2050년 서울',80,34],['기술 역사관',28,46]];
+
+/* ---------------- utils ---------------- */
+const $ = s => document.querySelector(s);
+const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const now = () => Date.now();
+const fmt = s => { const n = Math.max(0, Math.round(s)); return String(Math.floor(n/60)).padStart(2,'0') + ':' + String(n%60).padStart(2,'0'); };
+const norm = s => String(s || '').replace(/\s/g,'');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } };
