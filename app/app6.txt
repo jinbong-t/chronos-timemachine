@@ -1,0 +1,137 @@
+    case 'runeClr': St.rune = ''; St.runeOrder = shuffle(RUNE_SYMS); Sound.servo(); renderStudent(); return;
+    case 'cyl': { const k = +b.dataset.k; St.cyl[k] = (St.cyl[k] + (+b.dataset.d)) % 4; Sound.servo(); renderStudent(); return; }
+    case 'cylCheck': { const at = (arr, o, r) => arr[(r + o) % 4]; let n = 0; for (let r=0;r<4;r++) if (CYL.change.indexOf(at(CYL.change, St.cyl[0], r)) === r && CYL.tech.indexOf(at(CYL.tech, St.cyl[1], r)) === r) n++;
+      if (n === 4) { Sound.grant(); FX.flash('cy'); document.querySelectorAll('.cyl .cell:not(.era)').forEach(c => c.classList.add('hit')); $('#devmsg').innerHTML = '<div class="grant">ALIGNED</div>'; setTimeout(() => setStep('gate'), 1100); } else { $('#devmsg').innerHTML = `<div class="deny">MISALIGNED</div><p class="small muted">한 줄에 시대·변화·기술이 모두 맞은 줄: ${n}/4</p>`; FX.deny($('.cyl')); } return; }
+    case 'swipe': doSwipe(b.dataset.v); return;
+    case 'plug': { const k = +b.dataset.k; St.parts[k] = (St.parts[k] + (+b.dataset.d)) % 3; Sound.servo(); renderStudent(); return; }
+    case 'partsCheck': { const ok = PARTS.map((p,k) => St.parts[k] === p[2]); ok.forEach((v,k) => { const el = $('#sock'+k); if (el) el.classList.toggle('in', v); });
+      if (ok.every(Boolean)) { Sound.clack(); Sound.grant(); FX.flash('cy'); $('#devmsg').innerHTML = '<div class="grant">PARTS LOCKED IN</div><p class="small">A4 반은 A5(148×210mm), 우리나라 산업 표준은 KS, 공통 충전 단자는 USB-C. 표준이 같으니 어디서 만든 부품도 맞습니다.</p>'; setTimeout(() => setStep('letter'), 2200); }
+      else { Sound.no(); FX.flash('red'); $('#devmsg').innerHTML = `<div class="deny">FIT ERROR</div><p class="small muted">맞게 끼워진 부품: ${ok.filter(Boolean).length}/3</p>`; } return; }
+    case 'station': St.asm.sel = b.dataset.v; Sound.blip(); renderStudent(); return;
+    case 'mat': { const A = St.asm, m = b.dataset.v; if (ASM_DECOY.includes(m)) { Sound.no(); FX.deny(b); const d = $('#devmsg'); if (d) d.innerHTML = '<div class="msg no">거부됨 · 이 마을에서는 구할 수 없고, 고장 나면 고칠 사람도 없어요.</div>'; return; }
+      if (A[A.sel].length >= 3) { const o = A.sel === 'fridge' ? 'bulb' : 'fridge'; if (A[o].length < 3) A.sel = o; else return; } A[A.sel].push(m); Sound.clack(); renderStudent(); return; }
+    case 'asmClr': St.asm = {sel:'fridge', fridge:[], bulb:[]}; Sound.servo(); renderStudent(); return;
+    case 'asmCheck': { const A = St.asm, okF = ASM.fridge.need.every(x => A.fridge.includes(x)), okB = ASM.bulb.need.every(x => A.bulb.includes(x));
+      if (okF && okB) { Sound.grant(); FX.flash('cy'); $('#devmsg').innerHTML = '<div class="grant">ASSEMBLED</div><p class="small">항아리 냉장고: 두 항아리 사이 젖은 모래의 물이 증발하며 열을 빼앗아 안쪽이 시원해진다. 페트병 전구: 물과 표백제(물이 썩지 않게)를 넣은 페트병을 지붕에 끼우면 햇빛이 퍼져 방이 밝아진다.</p>'; setTimeout(() => setStep('reason'), 2600); }
+      else { Sound.no(); FX.flash('red'); $('#devmsg').innerHTML = `<div class="deny">ASSEMBLY FAILED</div><p class="small muted">${!okF && !okB ? '두 조립대 모두' : !okF ? '항아리 냉장고' : '페트병 전구'}의 재료가 맞지 않아요. 엽서 뒷면을 다시 보세요.</p>`; } return; }
+    case 'closeCrack': St.crack = null; renderStudent(); return;
+    case 'refl': { const v = ($('#refl')||{}).value || ''; if (norm(v).length < 8) { St.msg.refl = ['no','한 문장 이상 써 주세요.']; renderStudent(); return; } T.reflection = v.trim(); save(true); Sound.grant(); renderStudent(); return; }
+  }
+}
+function studentInput(e) {
+  const t = e.target, T = St.T; if (!T) return;
+  if (t.dataset.free) { T.free[t.dataset.free] = t.value; save(); }
+  if (t.id === 'tname') { T.name = t.value.trim() || T.tid.replace('t','') + '모둠'; save(); }
+}
+
+/* =========================================================
+   TEACHER CONSOLE (#teacher)
+   ========================================================= */
+const Tc = {cls:'demo', sess:{phase:'lobby'}, teams:{}, tab:'screen', unsub:[], run:null, last:null};
+function startTeacher() {
+  if (!(sessionStorage.getItem('chronos:pin') === 'ok' || Store.mode === 'local')) return renderPin();
+  Store.onClass(cls => { Tc.unsub.forEach(u => u && u()); Tc.unsub = []; Tc.cls = cls;
+    Tc.unsub.push(Store.onSession(cls, s => { Tc.sess = s || {phase:'lobby'}; renderTeacher(); }));
+    Tc.unsub.push(Store.onTeams(cls, t => { Tc.teams = t || {}; renderTeacher(true); })); });
+  setInterval(() => { const el = $('#ptimer'); if (el && Tc.sess.startedAt) el.textContent = fmt(GAME_SEC - (now()-Tc.sess.startedAt)/1000); }, 1000);
+}
+function renderPin() { $('#app').innerHTML = `<div class="center"><div class="inner"><div class="logo" style="font-size:28px">CHRONOS<small>교사용 콘솔</small></div><input type="password" id="pin" placeholder="교사 번호" style="max-width:200px;text-align:center"><button class="btn" data-act="pin">열기</button><div id="pinmsg"></div></div></div>`; }
+const PH = {lobby:'탑승 대기', opening:'오프닝', play:'게임 진행', climax:'카운트다운', launch:'발사', ending:'엔딩', credits:'크레딧'};
+const teamList = () => Array.from({length:TEAM_COUNT}, (_,k) => 't' + (k+1)).filter(t => Tc.teams[t]);
+function renderTeacher(teamsOnly) {
+  if (teamsOnly && Tc.tab === 'screen' && !['play','lobby'].includes(Tc.sess.phase)) return;
+  const ph = Tc.sess.phase || 'lobby';
+  $('#app').innerHTML = `<div class="tshell"><div class="ttop"><div class="logo">CHRONOS<small>교사 콘솔 · 반 ${esc(Tc.cls)} · ${Store.mode === 'firebase' ? 'Firebase 실시간' : '데모(이 기기만)'}</small></div>
+    <div class="tabs" role="tablist"><button role="tab" aria-selected="${Tc.tab==='screen'}" data-act="tab" data-v="screen">시동 화면(스크린)</button><button role="tab" aria-selected="${Tc.tab==='dash'}" data-act="tab" data-v="dash">대시보드</button><button role="tab" aria-selected="${Tc.tab==='set'}" data-act="tab" data-v="set">설정</button></div></div>
+    <div class="frame ctrl"><span class="ph">PHASE · ${PH[ph]}</span><button class="btn small ghost" data-act="ph-opening">① 오프닝</button><button class="btn small" data-act="ph-play">② 게임 시작</button><button class="btn small" style="--c:var(--amber)" data-act="ph-climax">③ 시동 카운트다운</button><button class="btn small" style="--c:var(--red)" data-act="ph-launch">④ “1!” 발사</button><button class="btn small ghost" data-act="ph-credits">⑤ 크레딧</button></div>
+    ${Tc.tab === 'screen' ? `<div class="frame proj" id="proj">${projInner()}</div>` : Tc.tab === 'dash' ? dashInner() : setInner()}</div>`;
+  if (Tc.tab === 'screen') projAfter();
+}
+function projInner() {
+  const s = Tc.sess, ph = s.phase || 'lobby';
+  if (ph === 'lobby') return `<div class="center" style="min-height:60vh"><div class="inner"><div class="lbl">Chronos · time machine</div><div class="huge rgb">고장 난 타임머신</div><p class="muted">마지막 카운트다운</p><p>탑승권의 QR을 찍고 크로노스 콘솔에 접속하세요.</p><div>${teamList().map(t => `<span class="dot" style="--c:var(--cyan)">${esc(Tc.teams[t].name)}</span>`).join('') || '<span class="muted">아직 접속한 모둠이 없습니다</span>'}</div></div></div>`;
+  if (ph === 'opening') return `<div style="max-width:880px;text-align:left;display:grid;gap:14px;width:100%"><div class="deny" style="font-size:14px">INCOMING · EMERGENCY TRANSMISSION · 발신자: 한 박사</div><div class="frame comm doc"><div class="eye doc"></div><div><div class="who">COMM LINK · 한 박사</div><div class="txt" id="optxt" style="font-size:22px"></div></div></div><div class="frame comm" id="tekiOp" hidden><div class="eye"></div><div><div class="who">COMM LINK · TEKI</div><div class="txt" style="font-size:22px">탑승자 확인. 저는 크로노스의 AI 테키입니다. 현재 인류의 기술을 정리하는 중입니다. 쓸모없는 것은 지우는 것이 효율적입니다. 출발까지 35분.</div></div></div></div>`;
+  if (ph === 'play') return `<div style="width:100%;display:grid;justify-items:center"><div class="lbl">Time remaining</div><div class="count" id="ptimer" style="font-size:clamp(80px,15vw,170px);color:var(--cyan);text-shadow:0 0 40px rgba(41,230,255,.5)">${fmt(GAME_SEC - (now()-(s.startedAt||now()))/1000)}</div><div class="projroute">${[1,2,3,4,5,6].map(i => `<div class="col" style="--c:var(--c-${i})"><b>${i===6?'RETURN':'S#'+i} · ${KTAG[i]}</b><span class="small muted">${PLACE[i]}</span><div>${teamList().filter(t => { const T = Tc.teams[t]; return i === 6 ? T.finished : (!T.finished && T.scene === i); }).map(t => `<span class="dot">${esc(Tc.teams[t].name)}</span>`).join('')}</div></div>`).join('')}</div></div>`;
+  if (ph === 'climax') return `<div class="inner" style="display:grid;gap:12px;justify-items:center"><div class="lbl">Chronos · ignition sequence</div><div class="count" id="pcount" style="font-size:clamp(160px,30vw,340px)">…</div><p id="pmsg" style="font-size:22px">점화 코드 확인. 카운트다운을 시작합니다.</p></div>`;
+  if (ph === 'launch') return `<div class="huge rgb">LAUNCH</div>`;
+  if (ph === 'ending') return `<div style="max-width:880px;text-align:left;display:grid;gap:14px;width:100%"><div class="frame comm doc"><div class="eye doc"></div><div><div class="who">COMM LINK · 한 박사 · 마지막 메시지</div><div class="txt" id="edtxt" style="font-size:22px"></div></div></div><div class="frame comm" id="tekiEnd" hidden><div class="eye"></div><div><div class="who">COMM LINK · TEKI</div><div class="txt" style="font-size:22px">저는 이제 기술을 지우지 않겠습니다. 대신 묻겠습니다. <b>이 기술은 누구를 위한 것인가요?</b></div></div></div>${classVote(Tc.teams)}</div>`;
+  if (ph === 'credits') { const f = s.featured || []; return `<div style="height:68vh;overflow:hidden;width:100%;max-width:860px"><div class="credits"><div class="huge rgb" style="font-size:52px">고장 난 타임머신</div><div class="muted">마지막 카운트다운</div>
+    <div><div class="lbl">Test passengers</div>${teamList().map(t => { const T = Tc.teams[t]; return `<div style="font-size:24px">${esc(T.name)} <span class="muted" style="font-size:16px">${T.finished && T.finishedAt && s.startedAt ? '귀환 ' + fmt((T.finishedAt - s.startedAt)/1000) : '크로노스와 함께 귀환'}</span></div>`; }).join('')}</div>
+    ${f.length ? `<div><div class="lbl">Today’s reasons</div>${f.map(x => `<p style="font-size:20px">“${esc(x.text)}” <span class="muted" style="font-size:15px">— ${esc(x.team)}</span></p>`).join('')}</div>` : ''}
+    <div><div class="lbl">Produced by</div><div style="font-size:22px">${esc(SCHOOL)} 기술·가정 수업</div></div>
+    <div style="margin-top:18vh"><div class="lbl">One year later · far side of the earth</div><p style="font-size:22px">아이들이 페트병 자동차를 굴리고, 태양광 스피커에서 음악이 흐른다.</p><div class="huge" style="font-size:40px;color:var(--amber)">다음 미션 — 너희 손으로 만드는 적정기술</div></div></div></div>`; }
+  return '';
+}
+async function typeInto(el, text) { if (!el) return; for (let i=0;i<text.length;i++){ if (!document.contains(el)) return; el.textContent = text.slice(0,i+1); if (i%2===0) Sound.type(); await sleep(reduced?0:36); } }
+function projAfter() {
+  const s = Tc.sess, key = s.phase + (s.climaxAt||''); if (Tc.last === key) return; Tc.last = key;
+  if (s.phase === 'opening') { FX.flash('red'); Sound.alarm(); Sound.glitch(); (async () => { await playFeed('opening', {label:'INCOMING · EMERGENCY TRANSMISSION', who:'한 박사', volume:.35, subs:[[0.4,'이 메시지를 보고 있다면, 크로노스는 이미 출발 직전이겠군.'],[3.4,'AI 테키가 쓸모없어 보이는 기술을 지우기 시작했다. 나는 시간의 틈에 갇혔어.'],[6.6,'너희가 시험 탑승자다. 테키의 기억 칩을 되찾아 주게.']]}); await typeInto($('#optxt'), '이 메시지를 보고 있다면 크로노스는 이미 출발 직전이겠군. 나는 AI 테키에게 ‘인류의 기술 역사를 효율적으로 정리하라’고 했다. 그런데 테키가 쓸모없어 보이는 기술을 지우기 시작했어. 막으려다 나는 시간의 틈에 갇혔다. 책상 위 탑승권을 확인해라. 너희가 크로노스의 시험 탑승자다. 테키의 기억 칩 다섯 개를 되찾아 주게. 단, 테키는 정답만으로는 배우지 못한다. 왜 그런지 설명해 줘야 해.'); const t = $('#tekiOp'); if (t) { t.hidden = false; FX.glitch(t); Sound.data(); } })(); }
+  if (s.phase === 'climax') { FX.freeze(false); const n = $('#pcount'), m = $('#pmsg'); runCountdown(s.climaxAt, n, m, () => Tc.run, v => Tc.run = v); setTimeout(() => { const mm = $('#pmsg'); if (mm && /1’은/.test(mm.innerHTML)) mm.insertAdjacentHTML('beforeend', '<br><span class="muted" style="font-size:16px">교사: “1은 누구죠?” → “사람! 우리!” → 다 함께 “일!” 하고 ④ 발사</span>'); }, 7000); }
+  if (s.phase === 'launch') { FX.freeze(false); FX.flash(); Sound.ignite(); playFeed('launch', {label:'CHRONOS · LAUNCH'}).then(ok => { if (!ok) FX.warp(1800); }); }
+  if (s.phase === 'ending') { (async () => { await typeInto($('#edtxt'), '고맙다. 사실 고장 난 건 타임머신이 아니라, 사람을 잊어버린 기술이었어. 너희는 오늘 기술을 고친 게 아니라, 기술 안에 사람을 다시 넣어 준 거다.'); const t = $('#tekiEnd'); if (t) { t.hidden = false; FX.glitch(t); } })(); }
+}
+const STEPK = {rune:'항법 기호',wheel:'시대 실린더',swipe:'미래 판독',parts:'규격 결합',asm:'조립대',twist:'조건 변경',intro:'통신',done:'통신',alarm:'경보',puzzle:'문제',keyword:'크립텍스',dilemma:'딜레마',reason:'근거 잠금',gate:'관문',letter:'지도',match:'회선'};
+const isFeat = (t,k) => (Tc.sess.featured || []).some(f => f.tid === t && f.k === k);
+function dashInner() {
+  const ts = teamList(); if (!ts.length) return `<div class="notice">아직 접속한 모둠이 없습니다. 학생 태블릿에서 탑승권 QR(주소 끝 #t1 ~ #t8)로 접속하면 여기에 나타납니다.</div>`;
+  const el = Tc.sess.startedAt ? (now()-Tc.sess.startedAt)/1000 : 0;
+  return `<div class="row"><button class="btn small" data-act="copyTsv">근거 문장 전체 복사(구글 시트용)</button><span class="muted small" id="copymsg">★를 누르면 엔딩 크레딧에 그 문장이 나옵니다.</span></div>
+  <div class="dash">${ts.map(t => { const T = Tc.teams[t]; const late = !T.finished && DEADLINE_MIN[T.scene] && el > DEADLINE_MIN[T.scene]*60; const r = k => k === 3 ? dilSentence(T) : (T.reasons && T.reasons[k]) || '';
+    return `<article class="frame tcard" style="--c:var(--c-${T.finished?6:T.scene})"><header><h3>${esc(T.name)}</h3><span class="tag2 ${T.finished?'ok':''}">${T.finished ? '귀환 완료' : 'S#'+T.scene+' · '+(STEPK[T.step]||T.step)}</span></header>
+      <div class="row small"><span>칩 ${[1,2,3,4,5].map(i => `<b style="color:${T.chips&&T.chips[i]?`var(--c-${i})`:'var(--line2)'}">■</b>`).join('')}</span><span class="muted">힌트권 ${2-(T.hintsLeft==null?2:T.hintsLeft)}장</span>${late?'<span class="tag2 warn">지연</span>':''}</div>
+      <div class="rs">${[1,2,3,4,5].map(k => r(k) ? `<div><i>S#${k}</i><span>${esc(r(k))}${k===3 && twistLine(T) ? `<br><span class="muted small">${esc(twistLine(T))}</span>` : ''}</span><button class="star" data-act="star" data-t="${t}" data-k="${k}" aria-pressed="${isFeat(t,String(k))}">★</button></div>` : '').join('')}${T.reflection ? `<div><i>성찰</i><span>${esc(T.reflection)}</span><button class="star" data-act="star" data-t="${t}" data-k="r" aria-pressed="${isFeat(t,'r')}">★</button></div>` : ''}</div>
+      ${T.finished ? '' : `<div class="row"><button class="btn small ghost" data-act="warp" data-t="${t}">타임워프 (현재 장면 건너뛰기)</button></div>`}</article>`; }).join('')}</div>`;
+}
+function setInner() {
+  return `<div class="frame mission"><h2><span class="no">CLASS</span>수업 반 설정</h2>
+    ${Store.mode === 'firebase' ? `<div class="row"><input type="text" id="clsIn" value="${esc(Tc.cls)}" placeholder="예: 1-3" style="max-width:160px"><button class="btn" data-act="setCls">이 반으로 수업 시작</button></div><p class="muted small">반을 바꾸면 학생 태블릿이 자동으로 그 반 기록으로 연결됩니다.</p>` : `<p class="muted">데모 모드에서는 반이 ‘demo’ 하나입니다. Firebase 설정을 넣으면 반별로 기록됩니다.</p>`}
+    <div class="row"><button class="btn ghost" data-act="reset">이 반 기록 초기화</button><span id="resetConfirm"></span></div>
+    <h2><span class="no">TEST</span>장면 바로 가기 (미리보기·점검용)</h2>
+    <div class="row"><select id="jumpTeam" style="padding:8px;background:#050a15;border:1px solid var(--line2)">${Array.from({length:TEAM_COUNT},(_,k)=>`<option value="t${k+1}">${k+1}모둠</option>`).join('')}</select>${[1,2,3,4,5,6].map(n => `<button class="btn small ghost" data-act="jump" data-n="${n}">${n===6?'귀환':'S#'+n}</button>`).join('')}</div>
+    <p class="muted small">고른 모둠의 태블릿이 그 장면 처음으로 이동하고, 앞 장면 칩은 자동으로 채워집니다. 수업 중에는 쓰지 마세요.</p>
+    <h2><span class="no">QR</span>학생 접속 주소</h2><div class="small" style="font-family:var(--f-mono);display:grid;gap:4px">${Array.from({length:TEAM_COUNT},(_,k)=>`<span>${k+1}모둠 → ${esc(location.href.split('#')[0])}#t${k+1}</span>`).join('')}</div></div>`;
+}
+function teacherClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act; Sound.click();
+  if (a === 'pin') { if ($('#pin').value === TEACHER_PIN) { sessionStorage.setItem('chronos:pin','ok'); startTeacher(); } else $('#pinmsg').innerHTML = '<div class="deny">ACCESS DENIED</div>'; return; }
+  if (a === 'tab') { Tc.tab = b.dataset.v; Tc.last = null; renderTeacher(); return; }
+  if (a === 'ph-opening') return Store.patchSession(Tc.cls, {phase:'opening'});
+  if (a === 'ph-play') return Store.patchSession(Tc.cls, {phase:'play', startedAt: Tc.sess.startedAt || now()});
+  if (a === 'ph-climax') return Store.patchSession(Tc.cls, {phase:'climax', climaxAt: now()});
+  if (a === 'ph-launch') { Store.patchSession(Tc.cls, {phase:'launch'}); setTimeout(() => Store.patchSession(Tc.cls, {phase:'ending'}), 2600); return; }
+  if (a === 'ph-credits') return Store.patchSession(Tc.cls, {phase:'credits'});
+  if (a === 'warp') return Store.saveTeam(Tc.cls, b.dataset.t, {warpReq: Tc.teams[b.dataset.t].scene});
+  if (a === 'star') { const t = b.dataset.t, k = b.dataset.k, T = Tc.teams[t]; const f = (Tc.sess.featured || []).slice(); const i = f.findIndex(x => x.tid === t && x.k === k);
+    if (i >= 0) f.splice(i,1); else f.push({tid:t, k, team:T.name, text: k === 'r' ? T.reflection : (k === '3' ? dilSentence(T) : T.reasons[k])}); Store.patchSession(Tc.cls, {featured:f}); return; }
+  if (a === 'copyTsv') { const rows = [['모둠','S#1 기술의 의미','S#2 발달과 사회 변화','S#3 윤리 딜레마','S#4 표준화','S#5 적정기술','성찰','힌트권 사용','귀환']];
+    teamList().forEach(t => { const T = Tc.teams[t]; rows.push([T.name, T.reasons[1]||'', T.reasons[2]||'', dilSentence(T), T.reasons[4]||'', T.reasons[5]||'', T.reflection||'', 2-(T.hintsLeft==null?2:T.hintsLeft), T.finished?'O':'']); });
+    const tsv = rows.map(r => r.map(c => String(c).replace(/[\t\n]/g,' ')).join('\t')).join('\n');
+    const fb = () => { const ta = document.createElement('textarea'); ta.value = tsv; ta.rows = 6; b.parentElement.after(ta); ta.select(); $('#copymsg').textContent = '복사가 막혀 있어요. 아래 글을 선택해 복사하세요.'; };
+    try { navigator.clipboard.writeText(tsv).then(() => { $('#copymsg').textContent = '복사했어요. 구글 시트에 붙여 넣으세요.'; }, fb); } catch(err) { fb(); } return; }
+  if (a === 'jump') { const t = $('#jumpTeam').value, n = +b.dataset.n; Store.saveTeam(Tc.cls, t, {jumpReq:{scene:n, at:now()}}); if (Tc.sess.phase !== 'play') Store.patchSession(Tc.cls, {phase:'play', startedAt: Tc.sess.startedAt || now()}); return; }
+  if (a === 'setCls') { const v = $('#clsIn').value.trim(); if (v) Store.setClass(v); return; }
+  if (a === 'reset') { $('#resetConfirm').innerHTML = `<span class="small">모든 모둠 기록이 지워집니다.</span> <button class="btn small" style="--c:var(--red)" data-act="resetYes">지우기</button>`; return; }
+  if (a === 'resetYes') { Store.resetClass(Tc.cls); $('#resetConfirm').textContent = '초기화했습니다.'; return; }
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+function teamPicker() {
+  $('#app').innerHTML = `<div class="center"><div class="inner"><div class="logo" style="font-size:30px">CHRONOS<small>시간 여행 장치 크로노스 · 시험 탑승</small></div><div class="huge rgb" style="font-size:clamp(34px,6vw,58px)">우리 모둠은?</div><p class="muted">탑승권 QR로 들어오면 이 화면은 건너뜁니다.</p>
+    <div class="teamgrid">${Array.from({length:TEAM_COUNT},(_,k)=>`<button data-pick="t${k+1}">${k+1}</button>`).join('')}</div><p class="small muted">선생님은 <a href="#teacher" style="color:var(--cyan)">교사 콘솔</a></p></div></div>`;
+}
+(async function boot() {
+  try { await Store.init(); } catch(e) { $('#app').innerHTML = `<div class="center"><div class="inner"><div class="deny">CONNECTION ERROR</div><p>Firebase에 연결하지 못했습니다. 설정과 인터넷을 확인하세요.</p></div></div>`; return; }
+  const h = location.hash.replace('#','');
+  if (h === 'teacher') { document.onclick = teacherClick; startTeacher(); }
+  else {
+    const m = /^t([1-9])$/.exec(h) || (!h && lsGet('chronos2:myteam') && /^t([1-9])$/.exec(lsGet('chronos2:myteam')));
+    document.onclick = e => { const p = e.target.closest('[data-pick]'); if (p) { location.hash = p.dataset.pick; return; } studentClick(e); };
+    document.oninput = studentInput;
+    if (m && +m[1] <= TEAM_COUNT) startStudent('t' + m[1]); else teamPicker();
+  }
+  addEventListener('hashchange', () => location.reload());
+})();
+</script>
+</body></html>
