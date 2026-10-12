@@ -52,3 +52,33 @@ hes */
 hes */
     case 'sw': { if (St.leaving || St.sw.join('') === CODES.issue) return; const k = +b.dataset.k; St.sw[k] = St.sw[k] ? 0 : 1; Sound.clack(); renderStudent(); if (St.sw.join('') === CODES.issue) { (async () => { Sound.power(); await sleep(200); const m = $('#swmeter'); if (m) m.style.width = '100%'; $('#devmsg').innerHTML = '<div class="grant">POWER RESTORED</div>'; Sound.grant(); await sleep(700); gotoScene(3, {key:'door', label:'GATE 2050 · POWER RESTORED', rate:.8, subs:[[0.2,'전원 복구. 2050년의 문이 열립니다.'],[3.2,'시간 터널 좌표 고정. 목적지 2050년 서울.']]}); })(); } return; 
 >>>>END
+<<<<OLD
+#4 → S#5 마을 도착
+  launch:null                       // 교사 스크린 ④ 발사
+};
+
+const SPOTS = {'교탁'
+====NEW
+#4 → S#5 마을 도착
+  launch:'media/v8_launch_return.mp4' // 교사 스크린 ④ 발사 (귀환)
+};
+
+const SPOTS = {'교탁'
+>>>>END
+<<<<OLD
+nch', {label:'CHRONOS · LAUNCH'}).then(ok => { if (!ok)
+====NEW
+nch', {label:'CHRONOS · RETURN JUMP', subs:[[0.3,'귀환 좌표 고정. 출발했던 그 시각으로 돌아갑니다.'],[3.4,'시간 터널 통과…'],[4.4,'도착. '+NOW_YEAR+'년 '+SCHOOL+' 기술실.']]}).then(ok => { if (!ok)
+>>>>END
+<<<<OLD
+f (a === 'ph-launch') { Store.patchSession(Tc.cls, {phase:'launch'}); setTimeout(() => Store.patchSession(Tc.cls, {phase:'ending'}), 2600); return; }
+  if (a ===
+====NEW
+f (a === 'ph-launch') { const c = Tc.cls; Store.patchSession(c, {phase:'launch'}); const go = ms => setTimeout(() => Store.patchSession(c, {phase:'ending'}), ms); if (!MEDIA.launch) go(2600); else fetch(MEDIA.launch, {method:'HEAD'}).then(r => go(r.ok ? 10200 : 2600), () => go(2600)); return; }
+  if (a ===
+>>>>END
+<<<<OLD
+크립텍스에 손댁 수 없습니다
+====NEW
+크립텍스에 손댈 수 없습니다
+>>>>END
