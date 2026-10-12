@@ -1,0 +1,162 @@
+<<<<OLD
+xtarea{min-height:38px}
+@keyframes roll{from{tra
+====NEW
+xtarea{min-height:38px}
+.roster input,.roster textarea{padding:6px 10px;min-height:0;height:36px;line-height:1.4}
+.rsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
+.rsum div{border:1px solid var(--line2);padding:6px 10px;font-size:13.5px;display:grid;gap:2px;min-width:0}
+.rsum b{font-family:var(--f-tech);font-size:11px;color:var(--cyan);letter-spacing:.1em}
+.rsum span{overflow-wrap:anywhere}
+.clssel{padding:8px 10px;background:#050a15;border:1px solid var(--line2);min-width:160px}
+.viewwarn{border-left:3px solid var(--amber);background:rgba(255,178,46,.08);padding:8px 12px;font-size:14px}
+@keyframes roll{from{tra
+>>>>END
+<<<<OLD
+, run:null, last:null};
+function startTeacher() 
+====NEW
+, run:null, last:null};
+function subscribeCls(cls) {
+  Tc.subCls = cls; Tc.unsub.forEach(u => u && u()); Tc.unsub = []; Tc.cls = cls; Tc.sess = {phase:'lobby'}; Tc.teams = {}; Tc.rosterOpen = null;
+  Tc.unsub.push(Store.onSession(cls, s => { Tc.sess = s || {phase:'lobby'}; renderTeacher(); }));
+  Tc.unsub.push(Store.onTeams(cls, t => { Tc.teams = t || {}; renderTeacher(true); }));
+}
+function clsSelect(id) {
+  const cls = Tc.classes && Tc.classes.length ? Tc.classes : [Tc.cls];
+  return `<select id="${id}" class="clssel" aria-label="보고 있는 반" onchange="pickView(this.value)" ${Store.mode === 'firebase' ? '' : 'disabled'}>${cls.map(c => `<option value="${esc(c)}" ${c===Tc.cls?'selected':''}>${esc(c)}반${c===Tc.active?' · 수업 중':''}</option>`).join('')}</select>`;
+}
+/* ----- 활동 기록 내보내기 (엑셀 · 이미지) ----- */
+function exportRows() {
+  const head = ['반','모둠','모둠 이름','모둠원','교사 메모','현재 위치','기억 칩','S#1 기술의 의미','S#2 발달과 사회 변화','S#3 윤리 딜레마','S#3 조건 변경','S#4 표준화','S#5 적정기술','성찰(소감)','힌트권 사용','타임워프','귀환','귀환 시각'];
+  const rows = [head];
+  teamList().forEach(t => { const T = Tc.teams[t], R = rosterOf(t), rs = T.reasons || {};
+    rows.push([Tc.cls, t.replace('t','') + '모둠', T.name || '', R.names || '', R.memo || '', T.finished ? '귀환 완료' : 'S#' + T.scene + ' · ' + (STEPK[T.step] || T.step || ''), [1,2,3,4,5].filter(i => T.chips && T.chips[i]).length + '/5',
+      rs[1] || '', rs[2] || '', dilSentence(T), twistLine(T), rs[4] || '', rs[5] || '', T.reflection || '', 2 - (T.hintsLeft == null ? 2 : T.hintsLeft), Object.keys(T.warped || {}).filter(k => T.warped[k]).map(k => 'S#' + k).join(', '), T.finished ? 'O' : '', T.finishedAt ? new Date(T.finishedAt).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}) : '']); });
+  return rows;
+}
+function exportName(ext) { const d = new Date(), p = n => String(n).padStart(2,'0'); return `chronos_class-${String(Tc.cls).replace(/[^0-9A-Za-z-]+/g,'_') || 'x'}_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}.${ext}`; }
+function saveBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+function loadScript(src) { return new Promise((res, rej) => { if (document.querySelector(`script[src="${src}"]`) && window.XLSX) return res(); const sc = document.createElement('script'); sc.src = src; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }); }
+function exportMsg(t) { const m = $('#copymsg'); if (m) m.textContent = t; }
+async function exportXlsx() {
+  const rows = exportRows(); if (rows.length < 2) { exportMsg('저장할 모둠 기록이 아직 없어요.'); return; }
+  exportMsg('엑셀 파일을 만드는 중…');
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = rows[0].map((h, i) => ({wch: i < 7 ? 12 : i === 17 ? 10 : 34}));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, String(Tc.cls).slice(0, 28) + '반');
+    XLSX.writeFile(wb, exportName('xlsx')); exportMsg('엑셀 파일을 저장했어요.');
+  } catch (e) {
+    const csv = '﻿' + rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    saveBlob(new Blob([csv], {type:'text/csv;charset=utf-8'}), exportName('csv')); exportMsg('엑셀 도구를 불러오지 못해 CSV(엑셀에서 열림)로 저장했어요.');
+  }
+}
+function exportPng() {
+  const ts = teamList(); if (!ts.length) { exportMsg('저장할 모둠 기록이 아직 없어요.'); return; }
+  const W = 1800, PAD = 40, GAP = 24, COLS = 2, CW = (W - PAD*2 - GAP*(COLS-1)) / COLS, LH = 30;
+  const cv = document.createElement('canvas'), x = cv.getContext('2d');
+  const F = (w, sz) => `${w} ${sz}px "IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif`;
+  const wrap = (text, maxW, font) => { x.font = font; const out = []; String(text).split('\n').forEach(par => { let line = ''; for (const ch of par) { if (x.measureText(line + ch).width > maxW && line) { out.push(line); line = ch; } else line += ch; } out.push(line); }); return out; };
+  const cards = ts.map(t => { const T = Tc.teams[t], R = rosterOf(t), rs = T.reasons || {}, items = [];
+    [[1,rs[1]],[2,rs[2]],[3,T.dil && T.dil.pick ? dilSentence(T) : ''],[4,rs[4]],[5,rs[5]]].forEach(([k,v]) => { if (v) items.push(['S#' + k, v]); });
+    if (T.reflection) items.push(['성찰', T.reflection]);
+    const lines = []; items.forEach(([k, v]) => { wrap(v, CW - 120, F(400, 20)).forEach((l, i) => lines.push([i ? '' : k, l])); });
+    const sub = [R.names, R.memo ? '메모 · ' + R.memo : ''].filter(Boolean).join('   ');
+    return {T, t, sub, lines, h: 30 + 40 + (sub ? 30 : 0) + 34 + Math.max(1, lines.length) * LH + 24}; });
+  const rowsH = []; for (let i = 0; i < cards.length; i += COLS) rowsH.push(Math.max(...cards.slice(i, i + COLS).map(c => c.h)));
+  const H = PAD + 110 + rowsH.reduce((a, b) => a + b + GAP, 0) + PAD;
+  cv.width = W; cv.height = H; x.fillStyle = '#04060c'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#29e6ff'; x.font = F(700, 18); x.fillText('CHRONOS · 활동 기록', PAD, PAD + 20);
+  x.fillStyle = '#e6f1ff'; x.font = F(700, 40); x.fillText(`고장 난 타임머신 · ${Tc.cls}반`, PAD, PAD + 70);
+  x.fillStyle = '#7f93b5'; x.font = F(400, 20); x.textAlign = 'right'; x.fillText(new Date().toLocaleString('ko-KR'), W - PAD, PAD + 70); x.textAlign = 'left';
+  let y = PAD + 110;
+  cards.forEach((c, i) => { const col = i % COLS, cx = PAD + col * (CW + GAP); if (col === 0 && i) y += rowsH[i / COLS - 1] + GAP;
+    const T = c.T, h = rowsH[Math.floor(i / COLS)], acc = T.finished ? '#3dffa8' : ['#29e6ff','#ffb22e','#ff35b8','#9a86ff','#3dffa8'][Math.max(0, (T.scene || 1) - 1)] || '#29e6ff';
+    x.fillStyle = '#0e1730'; x.fillRect(cx, y, CW, h); x.strokeStyle = '#2a4170'; x.lineWidth = 2; x.strokeRect(cx, y, CW, h); x.fillStyle = acc; x.fillRect(cx, y, 8, h);
+    let yy = y + 44; x.fillStyle = '#e6f1ff'; x.font = F(700, 28); x.fillText(`${c.t.replace('t','')}모둠 · ${T.name || ''}`, cx + 28, yy);
+    x.font = F(700, 18); x.fillStyle = acc; x.textAlign = 'right'; x.fillText(T.finished ? '귀환 완료' : 'S#' + T.scene + ' · ' + (STEPK[T.step] || T.step || ''), cx + CW - 24, yy); x.textAlign = 'left';
+    if (c.sub) { yy += 30; x.fillStyle = '#9fb3d6'; x.font = F(400, 18); x.fillText(wrap(c.sub, CW - 60, F(400, 18))[0], cx + 28, yy); }
+    yy += 34; x.font = F(400, 18); x.fillStyle = '#7f93b5'; x.fillText(`기억 칩 ${[1,2,3,4,5].filter(k => T.chips && T.chips[k]).length}/5 · 힌트권 ${2 - (T.hintsLeft == null ? 2 : T.hintsLeft)}장`, cx + 28, yy);
+    if (!c.lines.length) { yy += LH; x.fillText('아직 작성한 근거 문장이 없어요.', cx + 28, yy); }
+    c.lines.forEach(([k, l]) => { yy += LH; if (k) { x.fillStyle = acc; x.font = F(700, 17); x.fillText(k, cx + 28, yy); } x.fillStyle = '#e6f1ff'; x.font = F(400, 20); x.fillText(l, cx + 100, yy); }); });
+  cv.toBlob(b => { if (b) { saveBlob(b, exportName('png')); exportMsg('이미지를 저장했어요.'); } else exportMsg('이미지를 만들지 못했어요.'); }, 'image/png');
+}
+function pickView(v) { if (!v) return; Tc.view = (v === Tc.active) ? null : v; subscribeCls(v); renderTeacher(); }
+function startTeacher() 
+>>>>END
+<<<<OLD
+ cfg.classes) || [cls]; if (Tc.subCls === cls) { renderTeacher(); return; } Tc.subCls = cls; Tc.unsub.forEach(u => u && u()); Tc.unsub = []; Tc.cls = cls;
+    Tc.unsub.push(Store.onSession(cls, s => { Tc.sess = s || {phase:'lobby'}; renderTeacher(); }));
+    Tc.unsub.push(Store.onTeams(cls, t => { Tc.teams = t || {}; renderTeacher(true); })); });
+  setInterval(() 
+====NEW
+ cfg.classes) || [cls]; Tc.active = cls; const want = Tc.view || cls; if (Tc.subCls === want) { renderTeacher(); return; } subscribeCls(want); });
+  setInterval(() 
+>>>>END
+<<<<OLD
+eturn `<div class="row"><button class="btn small" data-act="copyTsv">근거 문장 전체 복사(구글 시트용)</button><spa
+====NEW
+eturn `<div class="row">${clsSelect('dashSel')}<button class="btn small" data-act="xlsx">엑셀로 저장</button><button class="btn small" data-act="png">이미지로 저장</button><button class="btn small ghost" data-act="copyTsv">근거 문장 복사(구글 시트용)</button><spa
+>>>>END
+<<<<OLD
+oster || {})[t]) || {};
+function setInner() {
+  
+====NEW
+oster || {})[t]) || {};
+function rosterSummary() {
+  return `<div class="rsum">${Array.from({length:TEAM_COUNT},(_,k)=>{ const r = rosterOf('t'+(k+1)); return `<div><b>${k+1}모둠</b><span>${esc(r.names||'—')}</span>${r.memo ? `<span class="muted small">메모 · ${esc(r.memo)}</span>` : ''}</div>`; }).join('')}</div>
+    ${Tc.sess.classMemo ? `<p class="small"><span class="muted">반 메모 ·</span> ${esc(Tc.sess.classMemo)}</p>` : ''}
+    <div class="row"><button class="btn small ghost" data-act="rosterEdit">명단·메모 고치기</button><span class="small muted" id="rosterMsg">${Tc.rosterSaved ? '저장했어요.' : ''}</span></div>`;
+}
+function rosterFolded() { const has = Tc.sess.roster && Object.values(Tc.sess.roster).some(r => r && (r.names || r.memo)); return Tc.rosterOpen == null ? !!has : !Tc.rosterOpen; }
+function rosterEditor() {
+  return `<p class="muted small">이름과 메모는 교사 화면(대시보드)에만 보이고 학생 화면에는 나오지 않아요. 다 쓰면 저장을 누르세요.</p>
+    <div class="roster"><b class="small">모둠</b><b class="small">학생 이름 (예: 김OO, 이OO …)</b><b class="small">교사 메모 (역할, 배려할 점 등)</b>
+    ${Array.from({length:TEAM_COUNT},(_,k)=>{ const t='t'+(k+1), r=rosterOf(t); return `<span>${k+1}모둠</span><input type="text" data-roster="${t}" data-f="names" value="${esc(r.names||'')}"><textarea data-roster="${t}" data-f="memo" rows="1">${esc(r.memo||'')}</textarea>`; }).join('')}</div>
+    <label class="small muted" for="clsMemo">반 전체 메모</label><textarea id="clsMemo" rows="2">${esc(Tc.sess.classMemo||'')}</textarea>
+    <div class="row"><button class="btn" data-act="saveRoster">명단·메모 저장</button><span class="small muted" id="rosterMsg"></span></div>`;
+}
+
+function setInner() {
+  
+>>>>END
+<<<<OLD
+돼요.</p>
+    <div class="pills">${cls.map(c => `<button class="pill" data-act="pickCls" data-v="${esc(c)}" aria-pressed="${c===Tc.cls}">${esc(c)}</button>`).join('')}</div>
+    <div class="row"><i
+====NEW
+돼요.</p>
+    <div class="row"><label for="clsSel" class="small muted">보고 있는 반</label>${clsSelect('clsSel')}
+      ${Tc.cls !== Tc.active ? `<button class="btn small" data-act="activate">이 반으로 수업 시작</button>` : '<span class="tag2 ok">수업 중인 반</span>'}</div>
+    ${Tc.cls !== Tc.active ? `<div class="viewwarn">지금 <b>${esc(Tc.cls)}반</b> 기록을 보고 있어요. 학생 태블릿은 <b>${esc(Tc.active)}반</b>에 연결되어 있어요. 이 반으로 수업하려면 ‘이 반으로 수업 시작’을 누르세요.</div>` : ''}
+    <div class="row"><i
+>>>>END
+<<<<OLD
+ 모둠 명단 · 교사 메모</h2>
+    <p class="muted small">이름과 메모는 교사 화면(대시보드)에만 보이고 학생 화면에는 나오지 않아요. 다 쓰면 저장을 누르세요.</p>
+    <div class="roster"><b class="small">모둠</b><b class="small">학생 이름 (예: 김OO, 이OO …)</b><b class="small">교사 메모 (역할, 배려할 점 등)</b>
+    ${Array.from({length:TEAM_COUNT},(_,k)=>{ const t='t'+(k+1), r=rosterOf(t); return `<span>${k+1}모둠</span><input type="text" data-roster="${t}" data-f="names" value="${esc(r.names||'')}"><textarea data-roster="${t}" data-f="memo" rows="1">${esc(r.memo||'')}</textarea>`; }).join('')}</div>
+    <label class="small muted" for="clsMemo">반 전체 메모</label><textarea id="clsMemo" rows="2">${esc(Tc.sess.classMemo||'')}</textarea>
+    <div class="row"><button class="btn" data-act="saveRoster">명단·메모 저장</button><span class="small muted" id="rosterMsg"></span></div>
+    <div class="row"><b
+====NEW
+ 모둠 명단 · 교사 메모</h2>
+    ${rosterFolded() ? rosterSummary() : rosterEditor()}
+    <div class="row"><b
+>>>>END
+<<<<OLD
+t.activeElement.blur(); setTimeout(() => { const m = $('#rosterMsg'); if (m) m.textContent = '저장했어요.'; }, 300); return; }
+  if (a === 'setCls') { const v = $('#clsIn').value.trim(); if (v) Store.setClass(v); return; }
+  if (a === '
+====NEW
+t.activeElement.blur(); Tc.rosterOpen = false; Tc.rosterSaved = true; Tc.sess = Object.assign({}, Tc.sess, {roster: ro, classMemo: ($('#clsMemo')||{}).value || ''}); renderTeacher(); setTimeout(() => { Tc.rosterSaved = false; }, 4000); return; }
+  if (a === 'rosterEdit') { Tc.rosterOpen = true; Tc.rosterSaved = false; renderTeacher(); return; }
+  if (a === 'activate') { const c = Tc.cls; Tc.view = null; Store.setClass(c); return; }
+  if (a === 'xlsx') { exportXlsx(b); return; }
+  if (a === 'png') { exportPng(b); return; }
+  if (a === 'setCls') { const v = $('#clsIn').value.trim(); if (v) { Tc.view = null; Store.setClass(v); } return; }
+  if (a === '
+>>>>END
