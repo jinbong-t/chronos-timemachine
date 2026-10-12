@@ -90,3 +90,109 @@ function clsSelect(
 모(이 기기만)'}</small></div>${joinChipHTML()}
     <div class="tabs" r
 >>>>END
+<<<<OLD
+es button{height:56px}}
+/* transitions */
+.veil{
+====NEW
+es button{height:56px}}
+/* reflection */
+.qlbl{font-size:15.5px;line-height:1.5}.qlbl b{color:var(--c)}
+.reflout{display:grid;gap:10px;grid-template-columns:1fr 1fr}.reflout div{border:1px solid var(--line2);padding:10px 12px}.reflout b{font-size:13px;color:var(--c)}.reflout p{margin:4px 0 0}
+.goalbox{border:1px solid var(--mint);background:rgba(61,255,168,.07);padding:12px 14px;display:grid;gap:4px}.goalbox p{margin:0;font-size:16px;font-weight:600}
+.refprompt{padding:14px 18px;display:grid;gap:8px;--c:var(--mint)}.refprompt p{margin:0;font-size:22px;line-height:1.6}.refprompt b{color:var(--mint)}
+.refcount{font-family:var(--f-tech);font-size:14px;letter-spacing:.14em;color:var(--mint)}
+@media (max-width:560px){.reflout{grid-template-columns:1fr}}
+/* transitions */
+.veil{
+>>>>END
+<<<<OLD
+      // 이야기에 나오는 학교 이름
+const MAKER = 'LJY';    
+====NEW
+      // 이야기에 나오는 학교 이름
+const GOAL = '기술의 의미와 발달 과정을 이해하고, 미래 기술·표준화·적정기술을 살펴보며 사람을 위한 기술인지 판단할 수 있다.';   // 엔딩에서 학생에게 공개되는 학습 목표
+const MAKER = 'LJY';    
+>>>>END
+<<<<OLD
+"no">REFLECTION</span>오늘 여행에서 근거를 하나 들어 한 문장으로</h2>
+      ${done ? `<div class="msg ok">전송 완료: “${esc(T.reflection)}”</div>` : `<textarea id="refl" maxlength="400" placeholder="기술은 누구를 위해 있어야 할까?"></textarea><div class="row"><button
+====NEW
+"no">REFLECTION</span>오늘의 마무리 · 학습 목표 돌아보기</h2>
+      ${done ? `<div class="msg ok">전송 완료</div><div class="reflout"><div><b>우리가 생각한 학습 목표</b><p>${esc(T.goalGuess || '—')}</p></div><div><b>오늘 활동 소감</b><p>${esc(T.reflection)}</p></div></div>
+      <div class="goalbox"><div class="lbl">선생님이 정한 오늘의 학습 목표</div><p>${esc(GOAL)}</p><span class="muted small">우리가 쓴 목표와 얼마나 비슷한가요?</span></div>` : `<label for="goal" class="qlbl"><b>①</b> 오늘 수업의 <b>학습 목표</b>는 무엇이었을까요? 내 말로 한 문장으로 써 보세요.</label>
+      <textarea id="goal" maxlength="200" rows="2" placeholder="예: 기술이 ○○를 위해 만들어진다는 것을 이해하고 …">${esc((St.draft||{}).goal || '')}</textarea>
+      <label for="refl" class="qlbl"><b>②</b> 학습 목표와 관련해 <b>오늘 활동 소감</b>을 한마디로 남겨 주세요.</label>
+      <textarea id="refl" maxlength="400" rows="2" placeholder="예: 적정기술 엽서를 보며 비싼 기술이 늘 좋은 건 아니라는 걸 알았다.">${esc((St.draft||{}).refl || '')}</textarea>
+      <div class="row"><button
+>>>>END
+<<<<OLD
+   case 'refl': { const v = ($('#refl')||{}).value || ''; if (norm(v).length < 8) { St.msg.refl = ['no','한 문장 이상 써 주세요.']; renderStudent(); return; } T.reflection = v.trim()
+====NEW
+   case 'refl': { const g = ($('#goal')||{}).value || '', v = ($('#refl')||{}).value || ''; St.draft = {goal:g, refl:v}; if (norm(g).length < 6) { St.msg.refl = ['no','① 학습 목표를 한 문장으로 써 주세요.']; renderStudent(); return; } if (norm(v).length < 8) { St.msg.refl = ['no','② 소감을 한 문장 이상 써 주세요.']; renderStudent(); return; } T.goalGuess = g.trim(); T.reflection = v.trim()
+>>>>END
+<<<<OLD
+e] = t.value; save(); }
+  if (t.id === 'tname') 
+====NEW
+e] = t.value; save(); }
+  if (t.id === 'goal' || t.id === 'refl') { St.draft = St.draft || {}; St.draft[t.id] = t.value; }
+  if (t.id === 'tname') 
+>>>>END
+<<<<OLD
+r(true); updJoinChip(); }));
+}
+function checkJoi
+====NEW
+r(true); updJoinChip(); updReflCount(); }));
+}
+function checkJoi
+>>>>END
+<<<<OLD
+k].name : ''));
+  });
+}
+function joinedCount() {
+====NEW
+k].name : ''));
+  });
+}
+function reflCountText() { const ts = teamList(); return `제출 ${ts.filter(t => Tc.teams[t].reflection).length} / ${ts.length} 모둠`; }
+function updReflCount() { const c = $('#reflcount'); if (c) c.textContent = reflCountText(); }
+function joinedCount() {
+>>>>END
+<<<<OLD
+','S#4 표준화','S#5 적정기술','성찰(소감)','힌트권 사용','타임워프',
+====NEW
+','S#4 표준화','S#5 적정기술','학습 목표(학생)','성찰(소감)','힌트권 사용','타임워프',
+>>>>END
+<<<<OLD
+] || '', rs[5] || '', T.reflection || '', 2 - (T
+====NEW
+] || '', rs[5] || '', T.goalGuess || '', T.reflection || '', 2 - (T
+>>>>END
+<<<<OLD
+> ({wch: i < 7 ? 12 : i === 17 ? 10 : 34}));
+    const
+====NEW
+> ({wch: i < 7 ? 12 : i >= 15 ? 10 : 34}));
+    const
+>>>>END
+<<<<OLD
+ush(['S#' + k, v]); });
+    if (T.reflection) it
+====NEW
+ush(['S#' + k, v]); });
+    if (T.goalGuess) items.push(['목표', T.goalGuess]);
+    if (T.reflection) it
+>>>>END
+<<<<OLD
+요?</b></div></div></div>${classVote(Tc.teams)}</
+====NEW
+요?</b></div></div></div><div class="frame refprompt"><div class="lbl">REFLECTION · 태블릿에 적어 주세요</div><p><b>①</b> 오늘 수업의 학습 목표는 무엇이었을까요?<br><b>②</b> 학습 목표와 관련해 오늘 활동 소감 한마디</p><div class="refcount" id="reflcount">${reflCountText()}</div></div>${classVote(Tc.teams)}</
+>>>>END
+<<<<OLD
+iv>` : '').join('')}${T.reflection ? `<div><i>성찰
+====NEW
+iv>` : '').join('')}${T.goalGuess ? `<div><i>목표</i><span>${esc(T.goalGuess)}</span><span></span></div>` : ''}${T.reflection ? `<div><i>성찰
+>>>>END
