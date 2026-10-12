@@ -1,0 +1,179 @@
+    <div class="drift" id="drift" data-i="${i}">${shuffle(WB[i].bank).map(w => `<button class="wchip ${blanksOf(i).includes(w)?'used':''}" data-act="word" data-w="${esc(w)}">${esc(w)}</button>`).join('')}</div>
+    <div class="row"><button class="btn ghost small" data-act="slow" aria-pressed="${St.slow}">${St.slow ? '감속 해제' : '감속 장치 작동'}</button><button class="btn ghost small" data-act="freeToggle">${T.free[i] != null ? '보기로 돌아가기' : '직접 문장 쓰기'}</button></div>
+    ${T.free[i] != null ? `<div class="field"><textarea id="free" data-free="${i}" placeholder="우리 말로 한 문장을 직접 써도 돼요 (15자 이상)">${esc(T.free[i])}</textarea></div>` : ''}
+    <div class="row"><button class="btn" data-act="${i===3?'take3':'take'}" data-i="${i}">${btnLabel || '칩 장착 ▸'}</button></div>${msgHTML('take')}`;
+}
+let driftRun = 0;
+function startDrift() {
+  const box = $('#drift'); if (!box) return; const id = ++driftRun; const W = box.clientWidth, H = box.clientHeight;
+  const chips = [...box.children].map(el => { const w = el.offsetWidth, h = el.offsetHeight, sp = 55 + Math.random()*60, a = Math.random()*Math.PI*2; return {el, w, h, x:Math.random()*Math.max(1,W-w), y:Math.random()*Math.max(1,H-h), vx:Math.cos(a)*sp, vy:Math.sin(a)*sp}; });
+  let last = performance.now();
+  (function f(t) {
+    if (id !== driftRun || !document.contains(box)) return; const dt = Math.min(.05, (t-last)/1000); last = t; const k = reduced ? 0 : (St.slow ? .25 : 1);
+    chips.forEach(c => { c.x += c.vx*dt*k; c.y += c.vy*dt*k; if (c.x < 0 || c.x > W-c.w) { c.vx *= -1; c.x = Math.max(0, Math.min(W-c.w, c.x)); } if (c.y < 0 || c.y > H-c.h) { c.vy *= -1; c.y = Math.max(0, Math.min(H-c.h, c.y)); }
+      if (k > 0 && Math.random() < .0035*k) { c.x = Math.random()*Math.max(1,W-c.w); c.y = Math.random()*Math.max(1,H-c.h); c.el.classList.remove('jump'); void c.el.offsetWidth; c.el.classList.add('jump'); }
+      c.el.style.transform = `translate(${c.x}px,${c.y}px)`; });
+    requestAnimationFrame(f);
+  })(last);
+}
+function sentenceText(i) { const b = blanksOf(i); return WB[i].parts.map((p,idx) => typeof p === 'number' ? b[p] : partText(WB[i].parts, b, idx)).join(''); }
+function checkWords(i) {
+  const T = St.T; if (T.free[i] != null) { return norm(T.free[i]).length >= 15 ? [true, T.free[i].trim()] : [false, '직접 쓴 문장이 너무 짧아요. 15자 이상 써 주세요.']; }
+  const b = blanksOf(i); if (b.some(x => !x)) return [false, '아직 비어 있는 빈칸이 있어요.'];
+  const W = WB[i];
+  if (W.ans && !W.ans.every((a,k) => a.includes(b[k]))) return [false, 'LOGIC ERROR · 테키가 이 기준으로는 기술을 구분하지 못합니다. 함정 단어를 확인하세요.'];
+  if (W.groups) { const n = i === 5 ? 2 : b.length; const g = W.groups.find(gr => gr[0] === b[0]); if (!g || !b.slice(0, n).every((x,k) => g[k] === x)) return [false, 'LOGIC ERROR · 앞뒤가 이어지지 않습니다. 같은 기술끼리 짝을 맞춰 보세요.']; }
+  if (W.bad && W.bad.includes(b[2])) return [false, 'LOGIC ERROR · 그건 적정기술의 조건이 아닙니다. 마을 사람의 입장에서 다시 생각해 보세요.'];
+  return [true, sentenceText(i)];
+}
+
+/* --- devices --- */
+function keypad(label) {
+  return `<div class="frame device"><div class="dlabel">${label}</div><div class="screen" id="kpscreen">${(St.kp.val + '____').slice(0,4).replace(/_/g,'·')}</div>
+    <div class="kp">${St.kp.order.slice(0,9).map(d => `<button data-act="kp" data-d="${d}">${d}</button>`).join('')}<button class="fn" data-act="kpclr">CLR</button><button data-act="kp" data-d="${St.kp.order[9]}">${St.kp.order[9]}</button><button class="fn" data-act="kpent">ENTER</button></div>
+    <span class="muted small">보안 키패드 · 누를 때마다 숫자 배열이 바뀝니다</span><div id="devmsg"></div></div>`;
+}
+function switches(label) {
+  const ok = St.sw.join('') === CODES.issue;
+  return `<div class="frame device"><div class="dlabel">${label}</div><div class="sw">${St.sw.map((v,k) => `<div class="swc ${v?'on':''}"><div class="led"></div><button data-act="sw" data-k="${k}" aria-label="${k+1}번 스위치 ${v?'켜짐':'꺼짐'}" aria-pressed="${!!v}"></button><span>SW-${k+1}</span></div>`).join('')}</div>
+    <div class="meter"><i id="swmeter" style="width:${ok?100:St.sw.reduce((a,b)=>a+b,0)*12}%"></i></div><span class="muted small">켜짐 = 1, 꺼짐 = 0</span><div id="devmsg"></div></div>`;
+}
+function cryptex() {
+  return `<div class="frame device"><div class="dlabel">CRYPTEX · 시동 키워드</div><div class="crypt">${St.crypt.map((v,k) => { const r = CRYPT[k], L = r.length; return `<div class="ring ${r[v]===CODES.keyword[k]?'':''}"><button data-act="ring" data-k="${k}" data-d="-1" aria-label="${k+1}번 고리 위로">▲</button><div class="win"><span>${r[(v-1+L)%L]}</span><span class="cur">${r[v]}</span><span>${r[(v+1)%L]}</span></div><button data-act="ring" data-k="${k}" data-d="1" aria-label="${k+1}번 고리 아래로">▼</button></div>`; }).join('')}</div>
+    <button class="btn" data-act="crypt">해독 ▸</button><div id="devmsg"></div></div>`;
+}
+function safeDial() {
+  const nums = Array.from({length:10}, (_,k) => { const a = k*36 - 90, r = 88; return `<text x="${120 + r*Math.cos(a*Math.PI/180)}" y="${126 + r*Math.sin(a*Math.PI/180)}" text-anchor="middle" font-family="Orbitron,monospace" font-size="18" font-weight="700" fill="#e6f1ff">${k}</text>`; }).join('');
+  const ticks = Array.from({length:50}, (_,k) => { const a = k*7.2*Math.PI/180; const r1 = 108, r2 = k%5===0 ? 98 : 103; return `<line x1="${120+r1*Math.sin(a)}" y1="${120-r1*Math.cos(a)}" x2="${120+r2*Math.sin(a)}" y2="${120-r2*Math.cos(a)}" stroke="#7f93b5" stroke-width="${k%5===0?2:1}"/>`; }).join('');
+  return `<div class="frame device"><div class="dlabel">VAULT DIAL · CHECK DIGIT</div><div class="safe" id="safe"><div class="ptr"></div><svg viewBox="0 0 240 240" id="safesvg" style="transform:rotate(${-St.safe*36}deg)"><circle cx="120" cy="120" r="116" fill="#0b1326" stroke="#2a4170" stroke-width="3"/>${ticks}${nums}<circle cx="120" cy="120" r="46" fill="#121d38" stroke="#29e6ff" stroke-width="2"/><circle cx="120" cy="120" r="10" fill="#29e6ff"/></svg></div>
+    <div class="center-row"><button class="btn ghost small" data-act="safe" data-d="-1">◀ 왼쪽</button><div class="screen" id="safeval" style="min-width:80px;font-size:26px">${((St.safe%10)+10)%10}</div><button class="btn ghost small" data-act="safe" data-d="1">오른쪽 ▶</button></div>
+    <span class="muted small">다이얼을 손가락으로 돌리거나 버튼을 누르세요</span><button class="btn" data-act="safeOpen">금고 열기 ▸</button><div id="devmsg"></div></div>`;
+}
+function bindSafe() {
+  const el = $('#safe'); let drag = null;
+  const ang = e => { const r = el.getBoundingClientRect(); return Math.atan2(e.clientY - (r.top + r.height/2), e.clientX - (r.left + r.width/2)) * 180/Math.PI; };
+  el.onpointerdown = e => { drag = {a:ang(e), s:St.safe}; el.setPointerCapture(e.pointerId); };
+  el.onpointermove = e => { if (!drag) return; const d = ang(e) - drag.a; const nv = drag.s - Math.round(d/36); if (nv !== St.safe) { St.safe = nv; Sound.tick(); $('#safesvg').style.transform = `rotate(${-St.safe*36}deg)`; $('#safeval').textContent = ((St.safe%10)+10)%10; } };
+  el.onpointerup = el.onpointercancel = () => { drag = null; };
+}
+function mapTargets() {
+  return `<div class="worldmap">${MAPT.map(([n,x,y]) => `<button class="target" style="left:${x}%;top:${y}%" data-act="maptarget" data-v="${n}"><i></i>${n}</button>`).join('')}</div>`;
+}
+function levers() {
+  return `<div class="frame device"><div class="dlabel">IGNITION LEVERS</div><div class="levers">${St.lev.map((v,k) => `<div class="lever"><button data-act="lev" data-k="${k}" data-d="1" aria-label="${k+1}번 레버 올리기">▲</button><div class="track"><i style="height:${v*10+5}%"></i></div><button data-act="lev" data-k="${k}" data-d="-1" aria-label="${k+1}번 레버 내리기">▼</button><div class="v" id="lv${k}">${v}</div></div>`).join('')}</div>
+    <input type="text" id="fkw" maxlength="8" placeholder="시동 키워드" style="max-width:220px;text-align:center;font-size:18px">
+    <button class="hold" id="hold" aria-label="점화 버튼 길게 누르기">HOLD TO<br>IGNITE</button><div id="devmsg"></div></div>`;
+}
+function bindHold() {
+  const el = $('#hold'); let t0 = 0, raf = 0;
+  const stop = () => { cancelAnimationFrame(raf); el.style.setProperty('--p', 0); };
+  el.onpointerdown = e => { e.preventDefault(); if (!finalReady()) return; t0 = performance.now(); Sound.ignite(); (function f(t){ const p = Math.min(100, (t - t0)/16); el.style.setProperty('--p', p); if (p >= 100) { stop(); ignite(); return; } raf = requestAnimationFrame(f); })(t0); };
+  el.onpointerup = el.onpointerleave = el.onpointercancel = stop;
+  el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (finalReady()) ignite(); } };
+}
+function finalReady() {
+  const okLev = St.lev.join('') === CODES.final, okKw = norm(($('#fkw')||{}).value) === CODES.keyword, m = $('#devmsg');
+  if (okLev && okKw) return true;
+  if (m) m.innerHTML = `<div class="deny">IGNITION DENIED</div><p class="small muted">${okLev ? '시동 키워드가 맞지 않습니다.' : '레버 번호가 맞지 않습니다. 칩을 여행 순서대로 확인하세요.'}</p>`; FX.deny($('.levers')); return false;
+}
+async function ignite() { const T = St.T; T.finished = true; T.finishedAt = now(); save(true); Sound.grant(); FX.flash(); await FX.warp(1700); renderStudent(); }
+
+function wiresHTML() {
+  const T = St.T; const used = Object.values(T.r5map).map(String);
+  const allOk = St.wireOk;
+  return `<div class="wires" id="wires"><svg id="wiresvg"></svg>
+    <div class="wcol">${VIL.map(([v],k) => `<button class="node ${St.wireSel===k?'sel':''} ${T.r5map[k]?'linked':''} ${allOk?'ok':''}" data-act="vil" data-k="${k}" id="vil${k}">${v}<small>${T.r5map[k] ? '연결: ' + TECH.find(x=>x[0]==T.r5map[k])[1] : '눌러서 연결 시작'}</small></button>`).join('')}</div>
+    <div class="wcol">${TECH.map(([n,a,b]) => `<button class="node ${used.includes(String(n))?'linked':''} ${allOk && n===2 && !St.ejected ? 'eject':''}" data-act="tech" data-n="${n}" id="tech${n}"><b>${n}</b>${a}<small>${b}</small></button>`).join('')}</div></div>`;
+}
+function drawWires() {
+  const T = St.T, svg = $('#wiresvg'), box = $('#wires'); if (!svg || !box) return; const B = box.getBoundingClientRect();
+  const allOk = St.wireOk;
+  svg.innerHTML = Object.entries(T.r5map).filter(([k,n]) => n).map(([k,n]) => { const a = $('#vil'+k).getBoundingClientRect(), b = $('#tech'+n).getBoundingClientRect();
+    const x1 = a.right - B.left, y1 = a.top + a.height/2 - B.top, x2 = b.left - B.left, y2 = b.top + b.height/2 - B.top;
+    return `<path d="M${x1} ${y1} C${x1+40} ${y1} ${x2-40} ${y2} ${x2} ${y2}" fill="none" stroke="${allOk?'#3dffa8':'#29e6ff'}" stroke-width="2.5" style="filter:drop-shadow(0 0 4px ${allOk?'#3dffa8':'#29e6ff'})"/>`; }).join('');
+}
+addEventListener('resize', () => { if ($('#wires')) drawWires(); });
+
+/* --- scenes --- */
+function s1() {
+  const T = St.T;
+  if (T.step === 'rune') return runeView();
+  if (T.step === 'puzzle') return scene(1, commStatic('데이터 손상. 사례 8개의 분류값을 다시 입력해 주십시오.'), `<h2><span class="no">MISSION 01</span>테키에게 ‘기술’을 다시 가르쳐라</h2>
+    <p>사례 8개를 <b>기술</b>(사람이 필요를 채우려고 만든 것) · <b>과학</b>(원리를 알아낸 것) · <b>자연</b>(사람이 만들지 않은 현상)으로 분류하세요.</p>
+    <div class="cls">${R1.map(([n],k) => `<div class="ci"><b>${n}</b><div class="seg" role="group" aria-label="${n}">${['기술','과학','자연'].map(c => `<button data-act="r1" data-k="${k}" data-c="${c}" aria-pressed="${T.r1[k]===c}">${c}</button>`).join('')}</div></div>`).join('')}</div>
+    <div class="row"><button class="btn" data-act="check1">DATA UPLOAD ▸</button></div>${msgHTML('p')}${hintBlock(1)}`);
+  if (T.step === 'reason') return scene(1, commStatic('분류 성공. ‘기술’ 5개 확인. 기억 칩 ① = <b>5</b>. 이제 분류 기준을 설명해 주십시오.'), wordLock(1));
+  if (T.step === 'gate') return scene(1, commStatic('좌표 출력 오류. 일부가 ' + SPOT[0] + '로 출력되었습니다.'), `<h2><span class="no">GATE 01</span>과거로 가는 좌표</h2>
+    <div class="split"><div style="display:grid;gap:12px"><div class="ticket">CHRONOS NAV-PRINT<br>DEST : 과거 / 기술 역사관<br>COORD : BC <span class="burn">████</span><br>— PRINT ERROR —</div>
+    <p>엔지니어는 <b>${SPOT[1]}의 봉투</b>에서 좌표 카드 한 장을 가져오세요. 카드의 네 자리 숫자를 보안 키패드에 입력하면 워프가 시작됩니다.</p></div>${keypad('NAV KEYPAD · COORDINATE')}</div>`);
+}
+function s2() {
+  const T = St.T;
+  if (T.step === 'wheel') return cylView();
+  if (T.step === 'puzzle') return scene(2, commStatic('역사관 연표가 뒤섞였습니다. 기술 사건 6개를 원래 순서로 돌려놓으십시오.'), `<h2><span class="no">MISSION 02</span>뒤죽박죽 타임라인 복구</h2>
+    <p>오래된 기술이 왼쪽에 오도록 바꾸세요. <b>카드 하나를 누르고, 바꿀 카드를 누르면</b> 자리가 바뀝니다. 바르게 놓이면 ‘전기’의 자리 번호가 칩 번호입니다.</p>
+    <div class="tl">${T.r2.map((e,p) => `<button class="ev ${St.sel===p?'sel':''}" data-act="r2" data-p="${p}"><span class="pos">SLOT ${p+1}</span><b>${R2[e].n}</b></button>`).join('')}</div>
+    <div class="eras"><span>AGRICULTURE</span><span>INDUSTRY</span><span>INFO</span><span>AI</span></div>
+    <div class="row"><button class="btn" data-act="check2">TIMELINE SYNC ▸</button></div>${msgHTML('p')}${hintBlock(2)}`);
+  if (T.step === 'reason') return scene(2, commStatic('타임라인 복구. ‘전기’ = SLOT 4. 기억 칩 ② = <b>4</b>. 기술이 사회를 어떻게 바꿨는지 설명해 주십시오.'),
+    `<div class="tl">${R2.map((e,p) => `<div class="ev fixed"><span class="pos">SLOT ${p+1}</span><b>${e.n}</b><span class="yr">${e.y}</span></div>`).join('')}</div>` + wordLock(2));
+  if (T.step === 'gate') return scene(2, commStatic('2050년 전시실 문의 전원 패널이 꺼져 있습니다. 미래일보 발행 번호가 스위치 배열과 같습니다.'), `<h2><span class="no">GATE 02</span>2050년의 문 · 전원 복구</h2>
+    <div class="split"><div style="display:grid;gap:10px">${MEDIA.hall ? `<div class="cctv"><video src="${MEDIA.hall}" autoplay muted loop playsinline></video><div class="scanl"></div><span class="ctag"><i></i>CAM-07 · 2050 GATE · LIVE</span></div>` : ''}<p>책상 위 클리어파일의 <b>‘미래에 도착하면 펼칠 것’ 띠지</b>를 뜯으세요.</p><p>미래일보 맨 위 <b>발행 번호의 마지막 네 자리</b>는 0과 1로만 되어 있습니다. 그대로 스위치를 켜고(1) 끄면(0) 전원이 들어옵니다.</p></div>${switches('POWER PANEL · GATE 2050')}</div>`);
+}
+function s3() {
+  const T = St.T;
+  if (T.step === 'keyword') return scene(3, commStatic('시동 키워드가 크립텍스에 잠겨 있습니다. 누군가 미래일보 인쇄기를 건드렸습니다. 1면 기사 속 활자가 다르게 찍힌 글자 네 개가 해독 열쇠입니다.'), `<h2><span class="no">MISSION 03</span>크립텍스를 해독하라</h2>
+    <div class="split"><div style="display:grid;gap:10px"><p>모둠원 모두 미래일보를 함께 읽으세요. 1면 기사에서 <b>진하고 글씨체가 다른 글자</b>를 찾아 <b>나오는 순서대로</b> 고리에 맞추면 크립텍스가 열립니다. 손가락으로 한 줄씩 짚으며 읽어 보세요.</p>${hintBlock(3)}</div>${cryptex()}</div>`);
+  if (T.step === 'twist') return s3twist();
+  if (T.step === 'swipe') return swipeView();
+  if (T.step === 'dilemma') { const d = T.dil;
+    return scene(3, commStatic('시간 정지 중. 저는 계산은 할 수 있지만 무엇이 옳은지는 계산할 수 없습니다. 정답은 없습니다. 여러분의 판단과 이유를 알려 주십시오.'), `<div class="alertbox"><div class="lbl">Moral override required</div><p style="margin-top:6px">브레이크가 고장 난 자율주행 버스. <b>그대로 직진</b>하면 무단횡단 중인 보행자 3명이 다친다. <b>방향을 틀면</b> 벽에 부딪혀 버스 승객 1명이 다친다. AI는 어떻게 판단하도록 만들어져야 할까?</p></div>
+    <div class="row"><button class="btn small" data-act="reveal">3·2·1 동시 공개 신호</button><span class="muted small">각자 탑승권 A/B를 동시에 들고, 소수 의견을 먼저 들어 주세요.</span></div><div id="revealbox"></div>
+    <div class="choices"><button class="choice" data-act="pick" data-v="A" aria-pressed="${d.pick==='A'}"><b>A · 그대로 직진</b><span>승객을 지킨다. 규칙을 어긴 쪽은 무단횡단한 보행자다.</span></button><button class="choice" data-act="pick" data-v="B" aria-pressed="${d.pick==='B'}"><b>B · 방향 전환</b><span>더 많은 사람을 지킨다. 대신 승객 1명이 다친다.</span></button></div>
+    <div><div class="lbl" style="margin-bottom:6px">사고가 나면 책임은 누구에게? (여러 개 가능)</div><div class="pills">${BLAME.map(b => `<button class="pill" data-act="blame" data-v="${b}" aria-pressed="${d.blame.includes(b)}">${b}</button>`).join('')}</div></div>
+    ${wordLock(3, '우리 모둠의 판단과 남는 문제', d.pick ? `<p>우리 모둠은 <b style="color:var(--c)">${d.pick==='A'?'A · 직진':'B · 방향 전환'}</b>을 선택했다.</p>` : '', '테키에게 판단 전송 ▸')}`); }
+}
+function twistReaction(k) {
+  const d = St.T.dil;
+  if (k === 0) return d.self === d.pick ? '같은 선택을 유지했습니다. 내가 승객이 되어도 기준이 흔들리지 않는군요.' : '선택이 바뀌었습니다. 내가 승객일 때와 아닐 때 판단이 달라집니다. 이것이 이 딜레마의 핵심입니다.';
+  if (k === 1) return d.buyMe && d.buyOthers && d.buyMe !== d.buyOthers ? '흥미롭습니다. 실제 연구에서도 많은 사람이 남들은 보행자 보호 버스를 타길 바라면서, 자기는 승객 보호 버스를 원했습니다.' : '나와 다른 사람에게 같은 기준을 적용했습니다.';
+  return '실제로 독일은 2017년 자율주행 윤리 원칙을 만들어, 나이·성별 같은 사람의 특징으로 누구를 보호할지 정하면 안 된다고 했습니다. 이런 규칙은 사회가 함께 정합니다.';
+}
+function s3twist() {
+  const T = St.T, d = T.dil, k = d.twk || 0, tw = TWISTS[k], ans = d[tw.key], ans2 = tw.key2 ? d[tw.key2] : 'x', answered = ans && ans2;
+  const opts = (key, cur) => `<div class="choices">${tw.opts.map(([v,l]) => `<button class="choice" data-act="twist" data-key="${key}" data-v="${v}" aria-pressed="${cur===v}" ${answered?'disabled':''}><b>${l}</b></button>`).join('')}</div>`;
+  return scene(3, commStatic(answered ? twistReaction(k) : '조건을 바꿔 다시 묻겠습니다. 처음 선택과 달라져도 괜찮습니다. 왜 달라졌는지가 중요합니다.'), `<h2><span class="no">TWIST ${k+1}/3</span>판단이 흔들리는가?</h2>
+    <p class="muted small">처음 우리 모둠의 선택: <b style="color:var(--c)">${d.pick==='A'?'A · 직진':'B · 방향 전환'}</b></p>
+    <div class="twist"><div class="q">${tw.q}</div><p class="muted">${tw.sub}</p>${opts(tw.key, ans)}${tw.key2 && ans ? `<div class="q" style="font-size:17px">${tw.q2}</div>${opts(tw.key2, d[tw.key2])}` : ''}</div>
+    ${answered ? `<div class="row"><button class="btn" data-act="twistNext">${k < 2 ? '다음 조건 ▸' : '판단 기록 완료 ▸'}</button></div>` : ''}`);
+}
+function ean13() {
+  const L=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'],G=['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'],R=L.map(s=>s.replace(/./g,c=>c==='0'?'1':'0')),P=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+  const d='8801234567893'.split('').map(Number); let b='101'; for(let i=1;i<=6;i++) b+=(P[d[0]][i-1]==='L'?L:G)[d[i]]; b+='01010'; for(let i=7;i<=12;i++) b+=R[d[i]]; b+='101';
+  let r=''; [...b].forEach((x,i)=>{ if(x==='1'){ const g=i<3||(i>=45&&i<50)||i>=92; r+=`<rect x="${24+i*3}" y="6" width="3" height="${g?96:86}" fill="#111"/>`; }}); const tx=24+85*3;
+  return `<svg viewBox="0 0 345 120" role="img" aria-label="끝자리가 찢어진 바코드 880123456789 빈칸">${r}<path d="M${tx} 0 L${tx+8} 14 L${tx-2} 30 L${tx+6} 48 L${tx-3} 66 L${tx+7} 84 L${tx} 104 L318 104 L318 0 Z" fill="#efe9da" stroke="#c9c2b0"/><text x="8" y="114" font-family="monospace" font-size="15" fill="#111">8</text><text x="74" y="114" font-family="monospace" font-size="15" fill="#111" letter-spacing="2.2">801234</text><text x="212" y="114" font-family="monospace" font-size="15" fill="#111" letter-spacing="2.2">56789</text><text x="287" y="114" font-family="monospace" font-size="15" fill="#c43">□</text></svg>`;
+}
+function s4() {
+  const T = St.T;
+  if (T.step === 'parts') return partsView();
+  if (T.step === 'puzzle') return scene(4, commStatic('부품 상자 금고가 체크디짓을 요구합니다. 전 세계가 함께 쓰는 바코드 규칙으로 계산하십시오.'), `<h2><span class="no">MISSION 04</span>찢어진 바코드 · 금고 해제</h2>
+    <div class="split"><div style="display:grid;gap:12px"><div class="barcode">${ean13()}<div class="scan"></div></div>
+      <p class="small">상품 바코드(EAN-13)의 마지막 숫자는 <b>체크디짓</b>(검사 숫자)입니다. 앞 12자리로 계산하는 숫자라서, 바코드가 잘못 읽혔는지 계산대가 스스로 검사할 수 있어요. 880은 한국에서 발급한 코드입니다.</p>
+      <ol class="method"><li>홀수 번째 자리 숫자를 모두 더한다.</li><li>짝수 번째 자리 숫자를 모두 더해 3을 곱한다.</li><li>두 값을 더한다 → <b>이 합계가 부품 파우치 자물쇠 번호</b></li><li>10의 배수가 되려면 얼마가 더 필요한가? → <b>체크디짓</b></li></ol>
+      <div class="calc">${'880123456789'.split('').map((c,k) => `<span>${c}<small>×${k%2?3:1}</small></span>`).join('')}</div>${hintBlock(4)}</div>${safeDial()}</div>`);
+  if (T.step === 'reason') return scene(4, commStatic('금고 해제. 28 + 33×3 = 127 → 130까지 3. 기억 칩 ④ = <b>3</b>. 엔지니어는 부품 파우치(자물쇠 127)를 여십시오.'), wordLock(4));
+  if (T.step === 'letter') return scene(4, commStatic('한 박사의 편지를 읽었습니까? 다음 목적지를 지도에서 선택하십시오.'), `<h2><span class="no">GATE 04</span>다음 목적지 · 홀로그램 지도</h2>
+    <p>엔지니어가 부품 파우치에서 가져온 <b>한 박사의 편지</b>를 모두 읽으세요. 편지 마지막 줄이 말하는 곳을 지도에서 누르면 워프가 시작됩니다.</p>${mapTargets()}${msgHTML('p')}`);
+}
+function s5() {
+  const T = St.T;
+  if (T.step === 'asm') return asmView();
+  if (T.step === 'match') { const allOk = St.wireOk;
+    return scene(5, commStatic(allOk ? '네 마을 연결 완료. 어느 마을에도 쓰이지 않은 기술이 붉게 깜박입니다. 그 모듈을 눌러 배출하십시오.' : '마을과 기술을 연결하십시오. 왼쪽 마을을 누르고 오른쪽 기술을 누르면 회선이 이어집니다.'), `<h2><span class="no">MISSION 05</span>마을마다 맞는 기술 연결</h2>
+    ${wiresHTML()}<div class="row"><button class="btn" data-act="check5" ${allOk?'disabled':''}>회선 점검 ▸</button><button class="btn ghost small" data-act="clearWires">회선 초기화</button></div>${msgHTML('p')}${hintBlock(5)}`); }
+  if (T.step === 'reason') return scene(5, commStatic('고가 정수 플랜트(2번) 배출. 기억 칩 ⑤ = <b>2</b>. 기술이 마을에 맞는 이유를 설명해 주십시오.'), wordLock(5));
+}
+/* ===== trick puzzles ===== */
+function runeView() {
+  return scene(1, commStatic('항법 장치 재부팅 대기. 기술이 만들어지는 순서대로 기호 네 개를 입력하십시오.'), `<h2><span class="no">TRICK 01</span>항법 룬 패드</h2>
+    <div class="split"><div style="display:grid;gap:10px"><p>교실 뒤 <b>‘우리 생활 속 기술’ 포스터</b>에는 기술이 만들어지는 네 단계 그림이 <b>뒤죽박죽</b> 붙어 있고, 그림마다 기호가 숨어 있습니다.</p><p>단계를 바른 순서로 떠올려 기호를 차례로 누르세요. 함정 기호도 섞여 있어요.</p><p class="small muted">힌트: 무엇이 불편한지 알아차리는 것에서 기술이 시작됩니다.</p></div>
