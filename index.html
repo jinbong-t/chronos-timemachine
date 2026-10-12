@@ -4,11 +4,12 @@
 <body><div id="boot">CHRONOS BOOTING…</div>
 <script>
 (function(){
-  var N = 6, v = '20261012';
+  var N = 6, v = '20261012b';
   var reqs = [];
   for (var i = 1; i <= N; i++) reqs.push(fetch('app/app' + i + '.txt?v=' + v, {cache:'no-cache'}).then(function(r){ if (!r.ok) throw new Error(r.status); return r.text(); }));
   Promise.all(reqs).then(function(parts){
-    document.open(); document.write(parts.join('')); document.close();
+    var html = parts.join('').replace('고개를 저습니다', '고개를 젓습니다');
+    document.open(); document.write(html); document.close();
   }).catch(function(e){
     document.getElementById('boot').textContent = '크로노스를 불러오지 못했습니다. 새로고침해 주세요. (' + e.message + ')';
   });

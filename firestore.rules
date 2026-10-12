@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 수업용 간이 규칙: 크로노스 컴렉션만 읽기·쓰기 허용 (학생 로그인 없음)
+    match /chronos/{doc} {
+      allow read, write: if true;
+    }
+    match /chronos_classes/{cls} {
+      allow read, write: if true;
+      match /teams/{team} {
+        allow read, write: if true;
+      }
+    }
+    // 그 밖의 컴렉션은 모두 막음
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
