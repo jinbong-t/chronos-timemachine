@@ -4,11 +4,19 @@
 <body><div id="boot">CHRONOS BOOTING…</div>
 <script>
 (function(){
-  var N = 6, v = '20261012b';
+  var N = 6, v = '20261012c';
+  /* 본문 조각에 덧붙이는 작은 수정(문구·자막) */
+  var PATCH = [
+    ['고개를 저습니다', '고개를 젓습니다'],
+    ["subs:[[0.2,'경고. 시내버스 7번 제동 장치 이상.']]", "subs:[[0.2,'경고. 시내버스 7번 제동 장치 이상.'],[3.5,'차내 경보 발생. 브레이크가 반응하지 않습니다.'],[6.8,'전방 횡단보도에 보행자 감지. 충돌까지 4초.']]"],
+    ["subs:[[0.2,'전력 저하. 예비 부품이 필요합니다.']]", "subs:[[0.2,'전력 저하. 조종석 패널 과부하.'],[4,'부품 규격이 맞지 않습니다. 크로노스가 버티지 못합니다.'],[7.5,'현재로 비상 귀환. 예비 부품이 필요합니다.']]"],
+    ["subs:[[0.3,'지구 반대편 마을에 접근 중.']]", "subs:[[0.3,'지구 반대편 마을에 접근 중.'],[3.5,'전기도, 수리점도 없는 마을입니다.'],[6.5,'마을 사람들은 지금 가진 것으로 살아가고 있습니다.']]"]
+  ];
   var reqs = [];
   for (var i = 1; i <= N; i++) reqs.push(fetch('app/app' + i + '.txt?v=' + v, {cache:'no-cache'}).then(function(r){ if (!r.ok) throw new Error(r.status); return r.text(); }));
   Promise.all(reqs).then(function(parts){
-    var html = parts.join('').replace('고개를 저습니다', '고개를 젓습니다');
+    var html = parts.join('');
+    PATCH.forEach(function(p){ html = html.split(p[0]).join(p[1]); });
     document.open(); document.write(html); document.close();
   }).catch(function(e){
     document.getElementById('boot').textContent = '크로노스를 불러오지 못했습니다. 새로고침해 주세요. (' + e.message + ')';
