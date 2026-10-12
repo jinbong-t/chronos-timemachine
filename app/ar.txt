@@ -1,0 +1,113 @@
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+/*@@CSS@@*/
+/* AR scanner */
+#arwrap{position:fixed;inset:0;z-index:300;background:#000}
+#arbox{position:absolute;inset:0;overflow:hidden}
+.arhud{position:absolute;left:0;right:0;bottom:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(4,6,12,.92) 30%);display:grid;gap:8px;z-index:5}
+.arhead{display:flex;gap:10px;align-items:center;justify-content:space-between;font-family:var(--f-tech);letter-spacing:.08em}
+.archips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.archip{display:inline-block;white-space:nowrap;font-size:12px;padding:4px 9px;border:1px solid var(--line2);color:var(--muted);border-radius:4px}
+.archip.need{border-color:var(--amber);color:var(--amber)}
+.archip.on{border-color:var(--mint);color:#04060c;background:var(--mint)}
+.ar-card{position:relative;width:1000px;height:707px;font-family:var(--f-body);color:#fff;opacity:0;transform:scale(.96);transition:opacity .5s,transform .5s;pointer-events:none}
+.ar-card.show{opacity:1;transform:none}
+.ar-frame i{position:absolute;width:90px;height:90px;border:8px solid var(--cyan);filter:drop-shadow(0 0 12px var(--cyan))}
+.ar-frame i:nth-child(1){left:-6px;top:-6px;border-right:0;border-bottom:0}.ar-frame i:nth-child(2){right:-6px;top:-6px;border-left:0;border-bottom:0}
+.ar-frame i:nth-child(3){left:-6px;bottom:-6px;border-right:0;border-top:0}.ar-frame i:nth-child(4){right:-6px;bottom:-6px;border-left:0;border-top:0}
+.ar-tint{position:absolute;inset:0;background:linear-gradient(180deg,rgba(41,230,255,.18),rgba(61,255,168,.22))}
+.ar-cool{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 60%,rgba(140,220,255,.45),rgba(41,230,255,.12) 60%,transparent)}
+.ar-light{position:absolute;inset:0;background:radial-gradient(ellipse 60% 85% at 36% 8%,rgba(255,244,200,.92),rgba(255,226,150,.55) 45%,rgba(255,210,120,.18) 75%,transparent);animation:arglow 2.4s ease-in-out infinite alternate}
+@keyframes arglow{from{opacity:.75}to{opacity:1}}
+.ar-top{position:absolute;left:30px;right:30px;top:24px;display:flex;justify-content:space-between;align-items:center;background:rgba(4,6,12,.78);border:2px solid var(--cyan);padding:12px 20px}
+.ar-top span{font-family:var(--f-tech);font-size:20px;letter-spacing:.12em;color:var(--cyan)}
+.ar-top b{font-size:32px}
+.ar-art{position:absolute;left:300px;top:140px;width:400px}
+.ar-c3 .ar-art{left:250px;top:110px;width:300px}
+.ar-c2 .ar-art{left:560px;top:110px;width:400px}
+.arsvg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 0 10px rgba(41,230,255,.8))}
+.ar-bot{position:absolute;left:30px;right:30px;bottom:24px;background:rgba(4,6,12,.85);border-left:10px solid var(--mint);padding:14px 20px;font-size:28px;line-height:1.35}
+.ar-bot>b{font-family:var(--f-tech);color:var(--mint);margin-right:8px}
+.ar-blue{margin-top:8px;font-size:26px;color:var(--amber);display:flex;gap:16px;flex-wrap:wrap}
+.ar-blue span{border:2px dashed var(--amber);padding:2px 12px}
+.roll{animation:arroll 3.5s linear infinite}
+@keyframes arroll{from{transform:translate(20px,98px) rotate(0)}to{transform:translate(280px,98px) rotate(720deg)}}
+.drops circle{animation:ardrop 2s linear infinite}
+@keyframes ardrop{from{transform:translateY(0)}to{transform:translateY(-30px)}}
+.steam{animation:arsteam 1.6s ease-in-out infinite alternate}
+@keyframes arsteam{from{opacity:.2;transform:translateY(6px)}to{opacity:1;transform:translateY(-6px)}}
+.rays{animation:arrays 1.2s ease-in-out infinite alternate}
+@keyframes arrays{from{opacity:.4}to{opacity:1}}
+.armanual{position:absolute;inset:0 0 170px;overflow:auto;display:grid;gap:16px;padding:16px;justify-items:center}
+.armanual .ar-card{transform:none;zoom:.62;background:#1a2440}
+@media (max-width:700px){.armanual .ar-card{zoom:.36}}
+/*@@JS@@*/
+/* ===== AR 마을 스캐너 (S#5) : 엽서 앞면 그림 인식 → 기술 연결 후의 마을 ===== */
+const AR = {targets:'media/ar_targets.mind', lib:'https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js', need:[2,3]};
+const AR_CARD = [
+  {tech:'Q드럼', name:'언덕 너머 마을', after:'물통을 머리에 이지 않고 굴려서 옮겨요. 한 번에 약 50L!', svg:`<svg viewBox="0 0 300 160" class="arsvg"><path d="M0 140 Q150 120 300 140" stroke="#ffd34d" stroke-width="3" stroke-dasharray="10 8" fill="none"/><g class="roll"><circle cx="0" cy="0" r="42" fill="#29e6ff" fill-opacity=".85" stroke="#fff" stroke-width="4"/><circle r="12" fill="#04060c"/><path d="M-42 0 H42 M0 -42 V42" stroke="#fff" stroke-width="3" opacity=".6"/></g><path d="M150 90 L230 20" stroke="#fff" stroke-width="4"/></svg>`},
+  {tech:'라이프스트로', name:'흙탕 강 마을', after:'흙탕물을 빨대로 바로 걸러 마셔요. 전기도 수리점도 필요 없어요.', svg:`<svg viewBox="0 0 300 160" class="arsvg"><rect x="130" y="10" width="40" height="140" rx="12" fill="#29e6ff" fill-opacity=".85" stroke="#fff" stroke-width="4"/><g class="drops"><circle cx="150" cy="150" r="7" fill="#8a7a4a"/><circle cx="150" cy="120" r="6" fill="#8a7a4a"/><circle cx="150" cy="60" r="6" fill="#bff6ff"/><circle cx="150" cy="30" r="7" fill="#bff6ff"/></g><text x="190" y="140" fill="#ffd34d" font-size="18" font-weight="700">흙탕물</text><text x="190" y="40" fill="#bff6ff" font-size="18" font-weight="700">맑은 물</text></svg>`},
+  {tech:'항아리 냉장고', name:'붉은 흙 마을', after:'젖은 모래의 물이 증발하며 열을 빼앗아, 안쪽 항아리가 시원해져요.', blue:['큰 진흙 항아리','작은 진흙 항아리','젖은 모래'], svg:`<svg viewBox="0 0 300 200" class="arsvg"><path d="M60 40 Q40 120 80 180 H220 Q260 120 240 40 Z" fill="#b5653a" stroke="#fff" stroke-width="4"/><path d="M95 55 Q82 120 108 165 H192 Q218 120 205 55 Z" fill="#d9c08a" stroke="#fff" stroke-width="3" stroke-dasharray="3 4"/><path d="M110 70 Q100 120 120 155 H180 Q200 120 190 70 Z" fill="#c27a4a" stroke="#fff" stroke-width="4"/><g class="cool"><circle cx="140" cy="120" r="9" fill="#7bbf4a"/><circle cx="160" cy="128" r="8" fill="#7bbf4a"/></g><g class="steam" stroke="#bff6ff" stroke-width="3" fill="none"><path d="M70 30 q8 -10 0 -20 q-8 -10 0 -20"/><path d="M230 30 q8 -10 0 -20 q-8 -10 0 -20"/></g><g fill="#fff" font-size="17" font-weight="900" stroke="#04060c" stroke-width="3" paint-order="stroke"><text x="22" y="112">A</text><text x="143" y="96">B</text><text x="94" y="140">C</text></g></svg>`},
+  {tech:'페트병 전구', name:'양철 지붕 마을', after:'지붕에 꽂은 물병이 햇빛을 굴절시켜 집 안을 밝혀요. 낮에는 약 55W 전구만큼!', blue:['빈 페트병','물','표백제 약간'], svg:`<svg viewBox="0 0 300 200" class="arsvg"><rect x="0" y="62" width="300" height="10" fill="#c0c4c9" stroke="#fff" stroke-width="2"/><rect x="128" y="10" width="44" height="120" rx="14" fill="#bff6ff" fill-opacity=".8" stroke="#fff" stroke-width="4"/><rect x="138" y="0" width="24" height="14" fill="#29e6ff"/><circle cx="150" cy="30" r="5" fill="#fff" opacity=".9"/><g class="rays" stroke="#ffe08a" stroke-width="5" stroke-linecap="round"><path d="M150 140 V190"/><path d="M130 136 L95 185"/><path d="M170 136 L205 185"/><path d="M122 126 L60 160"/><path d="M178 126 L240 160"/></g></svg>`}
+];
+let arRun = null;
+function arOverlayHTML(k) {
+  const c = AR_CARD[k];
+  const glow = k === 3 ? '<div class="ar-light"></div>' : k === 2 ? '<div class="ar-cool"></div>' : '<div class="ar-tint"></div>';
+  return `<div class="ar-card ar-c${k}">${glow}<div class="ar-frame"><i></i><i></i><i></i><i></i></div>
+    <div class="ar-top"><span>CHRONOS AR · 기술 연결 완료</span><b>${c.name} → ${c.tech}</b></div>
+    <div class="ar-art">${c.svg}</div>
+    <div class="ar-bot"><b>AFTER</b> ${c.after}${c.blue ? `<div class="ar-blue">설계도 · ${c.blue.map((x,i) => `<span>${'ABC'[i]} ${x}</span>`).join('')}</div>` : ''}</div></div>`;
+}
+function arChips() {
+  const seen = St.T.ar || {};
+  return [0,1,2,3].map(k => `<span class="archip ${seen[k]?'on':''} ${AR.need.includes(k)?'need':''}">${k+1} ${AR_CARD[k].name}${AR.need.includes(k)?' · 필수':''}${seen[k]?' ✔':''}</span>`).join('');
+}
+function arDone() { const s = St.T.ar || {}; return AR.need.every(k => s[k]); }
+function arUpdateHUD() {
+  const h = $('#archips'); if (h) h.innerHTML = arChips();
+  const g = $('#argo'); if (g) g.hidden = !arDone();
+}
+async function arStart() {
+  if (arRun) return; const T = St.T; T.ar = T.ar || {};
+  const wrap = document.createElement('div'); wrap.id = 'arwrap';
+  wrap.innerHTML = `<div id="arbox"></div><div class="arhud"><div class="arhead"><b>AR 마을 스캐너</b><span class="muted small">게시판 엽서 앞면을 화면 가득 비추세요</span><button class="btn ghost small" data-act="arClose">닫기</button></div>
+    <div id="archips" class="archips">${arChips()}</div><div id="armsg"></div><button class="btn" id="argo" data-act="arGo" hidden>설계도 확보 · 조립대로 ▸</button></div>`;
+  document.body.appendChild(wrap); arRun = {wrap}; Sound.power();
+  try {
+    const mod = await import(AR.lib);
+    const head = await fetch(AR.targets, {method:'HEAD'}).catch(() => null);
+    if (!head || !head.ok) throw new Error('인식용 파일(media/ar_targets.mind)이 없어요.');
+    const {CSS3DObject} = await import('three/addons/renderers/CSS3DRenderer.js');
+    const m = new mod.MindARThree({container:$('#arbox'), imageTargetSrc:AR.targets, maxTrack:1, uiScanning:'no', uiLoading:'yes', filterMinCF:0.0001, filterBeta:0.001});
+    arRun.m = m;
+    for (let k = 0; k < 4; k++) {
+      const node = document.createElement('div'); node.innerHTML = arOverlayHTML(k); const card = node.firstElementChild;
+      const obj = new CSS3DObject(node); const a = m.addCSSAnchor(k); a.group.add(obj);
+      a.onTargetFound = () => { card.classList.add('show'); const first = !T.ar[k]; T.ar[k] = true; Sound.grant(); if (first) { save(); FX.flash('cy'); } const ms = $('#armsg'); if (ms) ms.innerHTML = `<div class="msg ok">인식 성공 · ${AR_CARD[k].name}에 ${AR_CARD[k].tech} 연결!</div>`; arUpdateHUD(); };
+      a.onTargetLost = () => card.classList.remove('show');
+    }
+    const {renderer, cssRenderer, scene, cssScene, camera} = m;
+    await m.start();
+    renderer.setAnimationLoop(() => { renderer.render(scene, camera); cssRenderer.render(cssScene, camera); });
+  } catch (e) {
+    const ms = $('#armsg'); if (ms) ms.innerHTML = `<div class="msg no">AR을 시작하지 못했어요. ${esc(e && e.message || '')}<br>카메라 권한을 허용했는지 확인하고, 안 되면 선생님께 알려 주세요.</div><button class="btn ghost small" data-act="arManual">수동 판독 (설계도 직접 보기)</button>`;
+  }
+}
+function arStop() {
+  if (!arRun) return; const r = arRun; arRun = null;
+  try { if (r.m) { r.m.renderer.setAnimationLoop(null); r.m.stop(); } } catch (e) {}
+  r.wrap.remove();
+}
+function arManual() {
+  const T = St.T; T.ar = T.ar || {}; AR.need.forEach(k => T.ar[k] = true); save();
+  const box = $('#arbox'); if (box) box.innerHTML = `<div class="armanual">${AR.need.map(k => arOverlayHTML(k).replace('ar-card', 'ar-card show')).join('')}</div>`;
+  arUpdateHUD();
+}
+function arView() {
+  const T = St.T, seen = T.ar || {};
+  return scene(5, commStatic('마을 회선 연결 완료. 기술이 연결된 뒤 마을이 어떻게 바뀌는지 크로노스 AR 스캐너로 확인하십시오. 엽서 ③·④에는 마을 사람들과 함께 만들 설계도가 숨어 있습니다.'), `<h2><span class="no">AR SCAN</span>마을의 내일 보기</h2>
+    <p>엔지니어가 태블릿을 들고 교실 벽 <b>‘지구 반대편에서 온 엽서’ 게시판</b>으로 가세요. <b>AR 스캐너</b>를 켜고 엽서 <b>앞면 그림</b>을 화면 가득 비추면, 기술이 연결된 뒤의 마을이 나타납니다.</p>
+    <p class="muted small">처음 켤 때 카메라 사용을 묻는 창이 나오면 ‘허용’을 누르세요. 엽서가 반짝이거나 너무 비스듬하면 인식이 잘 안 돼요.</p>
+    <div class="archips">${arChips()}</div>
+    <div class="row"><button class="btn" data-act="arOpen">AR 스캐너 켜기 ▸</button>${arDone() ? '<button class="btn" data-act="arGo">조립대로 ▸</button>' : ''}</div>`);
+}
