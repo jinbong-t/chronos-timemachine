@@ -4,17 +4,20 @@
 <body><div id="boot">CHRONOS BOOTING…</div>
 <script>
 (function(){
-  /* 웹앱 본문(app1~6) + 수정본(patch.json)을 합쳐 실행합니다. Firebase 설정은 수정본 안에 들어 있어요. */
-  var N = 6, v = '20261012e';
+  /* 웹앱 본문(app1~6) + 수정본(patch.json, patch2.json)을 합쳐 실행합니다. Firebase 설정은 수정본 안에 들어 있어요. */
+  var N = 6, v = '20261012f';
   var get = function(u){ return fetch(u + '?v=' + v, {cache:'no-cache'}).then(function(r){ if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); }); };
   var reqs = [];
   for (var i = 1; i <= N; i++) reqs.push(get('app/app' + i + '.txt'));
   reqs.push(get('app/patch.json'));
+  reqs.push(get('app/patch2.json').catch(function(){ return '{"replace":[]}'; }));
   Promise.all(reqs).then(function(parts){
+    var patch2 = JSON.parse(parts.pop());
     var patch = JSON.parse(parts.pop());
     var html = parts.join('');
     if (html.length !== patch.base) throw new Error('본문 길이 불일치 ' + html.length);
     patch.ops.slice().sort(function(a,b){ return b[0] - a[0]; }).forEach(function(o){ html = html.slice(0, o[0]) + o[2] + html.slice(o[0] + o[1]); });
+    (patch2.replace || []).forEach(function(r){ html = html.split(r[0]).join(r[1]); });
     document.open(); document.write(html); document.close();
   }).catch(function(e){
     document.getElementById('boot').textContent = '크로노스를 불러오지 못했습니다. 새로고침해 주세요. (' + e.message + ')';
