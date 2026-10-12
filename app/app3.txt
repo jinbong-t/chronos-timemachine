@@ -1,0 +1,250 @@
+const lsSet = (k,v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const shuffle = a => { const b = a.slice(); for (let i=b.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [b[i],b[j]] = [b[j],b[i]]; } return b; };
+
+/* ---------------- sound: synthesized cyber SFX ---------------- */
+const Sound = (() => {
+  let ctx = null, on = lsGet('chronos:sound') !== false, hum = null, noiseBuf = null;
+  const ac = () => { if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} } if (ctx && ctx.state === 'suspended') ctx.resume(); return ctx; };
+  const out = () => ac() && ctx.destination;
+  function tone(f, d, type, vol, when, f2) {
+    if (!on || !ac()) return; const t = ctx.currentTime + (when||0), o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || .12, t + .008); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(out()); o.start(t); o.stop(t + d + .03);
+  }
+  function noise(d, vol, fFrom, fTo, when) {
+    if (!on || !ac()) return; if (!noiseBuf) { noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const ch = noiseBuf.getChannelData(0); for (let i=0;i<ch.length;i++) ch[i] = Math.random()*2-1; }
+    const t = ctx.currentTime + (when||0), s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noiseBuf; f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(fFrom||2000, t); if (fTo) f.frequency.exponentialRampToValueAtTime(fTo, t + d);
+    g.gain.setValueAtTime(vol||.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    s.connect(f).connect(g).connect(out()); s.start(t); s.stop(t + d + .03);
+  }
+  return {
+    unlock: ac,
+    get on() { return on; },
+    toggle() { on = !on; lsSet('chronos:sound', on); if (!on) this.hum(false); return on; },
+    hum(state) {
+      if (!ac()) return false;
+      if (state && on && !hum) { const g = ctx.createGain(); g.gain.value = .025; const a = ctx.createOscillator(), b = ctx.createOscillator(), l = ctx.createOscillator(), lg = ctx.createGain(); a.type='sawtooth'; b.type='sawtooth'; a.frequency.value=55; b.frequency.value=55.6; const f = ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=320; l.frequency.value=.15; lg.gain.value=120; l.connect(lg).connect(f.frequency); a.connect(f); b.connect(f); f.connect(g).connect(out()); a.start(); b.start(); l.start(); hum = {g,a,b,l}; }
+      else if (!state && hum) { try { hum.a.stop(); hum.b.stop(); hum.l.stop(); } catch(e) {} hum = null; }
+      return !!hum;
+    },
+    get humming() { return !!hum; },
+    click() { tone(2400, .03, 'square', .03); },
+    blip() { tone(1800, .05, 'sine', .06); tone(2700, .05, 'sine', .04, .04); },
+    type() { tone(3000 + Math.random()*900, .015, 'square', .012); },
+    data() { for (let i=0;i<6;i++) tone(900 + Math.random()*2400, .04, 'square', .025, i*.035); },
+    dtmf(d) { const lo=[941,697,697,697,770,770,770,852,852,852][d]||941, hi=[1336,1209,1336,1477,1209,1336,1477,1209,1336,1477][d]||1336; tone(lo,.12,'sine',.07); tone(hi,.12,'sine',.07); },
+    clack() { noise(.06,.25,1800); tone(140,.08,'square',.08); },
+    servo() { tone(220,.12,'sawtooth',.05,0,420); noise(.08,.05,3000); },
+    tick() { noise(.02,.18,4000); },
+    laser() { tone(1600,.25,'square',.05,0,180); },
+    scan() { tone(400,.6,'sine',.05,0,2400); },
+    ok() { [660,880,1320,1760].forEach((f,i) => tone(f,.18,'triangle',.09,i*.07)); noise(.25,.05,6000,800,.05); },
+    grant() { tone(880,.1,'square',.06); tone(1760,.25,'square',.06,.1); noise(.4,.06,500,6000,.05); },
+    no() { noise(.35,.18,900,200); tone(110,.3,'sawtooth',.1); tone(98,.3,'sawtooth',.08,.1); },
+    glitch() { for (let i=0;i<5;i++) noise(.04,.14,500+Math.random()*5000,null,i*.05); },
+    chip() { [1046,1568,2093].forEach((f,i) => tone(f,.25,'sine',.09,i*.06)); tone(220,.4,'triangle',.06,0,880); },
+    warp() { tone(60,1.3,'sawtooth',.06,0,1600); noise(1.3,.08,200,8000); },
+    alarm() { [0,.5,1,1.5].forEach(w => { tone(700,.45,'square',.045,w,1300); }); },
+    power() { tone(420,1.4,'sawtooth',.07,0,35); noise(1.2,.06,3000,100); },
+    beep(h) { tone(h?1320:660,.2,'square',.09); },
+    ignite() { tone(40,2,'sawtooth',.12,0,400); noise(2,.1,100,9000); }
+  };
+})();
+document.addEventListener('pointerdown', () => Sound.unlock(), {once:true});
+
+/* ---------------- visual fx ---------------- */
+const FX = {
+  flash(kind) { const f = $('#fx-flash'); f.className = ''; void f.offsetWidth; if (kind) f.classList.add(kind); f.classList.add('go'); },
+  shake() { document.body.classList.remove('shake'); void document.body.offsetWidth; document.body.classList.add('shake'); setTimeout(() => document.body.classList.remove('shake'), 500); },
+  glitch(el) { if (!el) return; el.classList.remove('glitch'); void el.offsetWidth; el.classList.add('glitch'); },
+  freeze(on) { document.body.classList.toggle('freeze', on); },
+  alarm(on) { document.body.classList.toggle('alarm', on); },
+  power() { document.body.classList.add('power'); Sound.power(); setTimeout(() => document.body.classList.remove('power'), 1600); },
+  deny(el) { FX.shake(); Sound.no(); FX.flash('red'); if (el) FX.glitch(el); },
+  async warp(ms) {
+    Sound.warp(); if (reduced) { FX.flash(); return sleep(300); }
+    const cv = $('#fx-warp'), x = cv.getContext('2d'); cv.width = innerWidth; cv.height = innerHeight; cv.classList.add('on');
+    const cx = cv.width/2, cy = cv.height/2, st = Array.from({length:280}, () => ({a:Math.random()*Math.PI*2, r:Math.random()*40, v:2+Math.random()*6, h:Math.random()<.5}));
+    const t0 = now(); ms = ms || 1300;
+    await new Promise(res => { (function frame(){ const p = (now()-t0)/ms; x.fillStyle = 'rgba(2,4,9,.32)'; x.fillRect(0,0,cv.width,cv.height);
+      st.forEach(s => { const r2 = s.r + s.v*(1+p*14); x.strokeStyle = s.h ? `rgba(41,230,255,${.4+p*.6})` : `rgba(255,53,184,${.3+p*.6})`; x.lineWidth = 1+p*2.4; x.beginPath(); x.moveTo(cx+Math.cos(s.a)*s.r, cy+Math.sin(s.a)*s.r); x.lineTo(cx+Math.cos(s.a)*r2, cy+Math.sin(s.a)*r2); x.stroke(); s.r = r2 > Math.max(cv.width,cv.height) ? Math.random()*30 : r2; });
+      if (p < 1) requestAnimationFrame(frame); else res(); })(); });
+    FX.flash('cy'); cv.classList.remove('on'); x.clearRect(0,0,cv.width,cv.height);
+  },
+  async decrypt(el, final) { if (!el) return; const ch = '01#$%&@ABCDEFGHIJK가나다라마바사아자차카타파하'; for (let k=0;k<14;k++){ el.textContent = Array.from(final, () => ch[Math.floor(Math.random()*ch.length)]).join(''); await sleep(45); } el.textContent = final; }
+};
+
+/* ---------------- video feed ---------------- */
+async function typeSub(el, text) { const id = (el._run = (el._run || 0) + 1); for (let i=0;i<=text.length;i++){ if (el._run !== id) return; el.lastChild.textContent = text.slice(0,i); if (i%3===0) Sound.type(); await sleep(reduced?0:34); } }
+function playFeed(key, opt) {
+  opt = opt || {}; const src = MEDIA[key];
+  return new Promise(res => {
+    if (!src) return res(false);
+    const w = document.createElement('div'); w.className = 'vfeed';
+    w.innerHTML = `<video playsinline preload="auto"></video><div class="vscan"></div><div class="vhud"></div><div class="vlabel"><i></i>${esc(opt.label || 'CHRONOS VISUAL FEED')}</div><div class="vsub" hidden><b>${esc(opt.who || 'TEKI')}</b><span></span></div><button class="btn small vskip">SKIP ▸</button>`;
+    document.body.appendChild(w); const v = w.querySelector('video'), sub = w.querySelector('.vsub');
+    v.src = src; v.volume = opt.volume == null ? .55 : opt.volume; v.muted = !Sound.on;
+    let done = false, si = -1;
+    const finish = ok => { if (done) return; done = true; w.classList.add('out'); Sound.glitch(); setTimeout(() => { w.remove(); res(ok); }, 380); };
+    w.querySelector('.vskip').onclick = e => { e.stopPropagation(); finish(true); };
+    v.onended = () => finish(true); v.onerror = () => finish(false);
+    v.ontimeupdate = () => { if (!opt.subs) return; let k = -1; opt.subs.forEach((x,i) => { if (v.currentTime >= x[0]) k = i; }); if (k !== si) { si = k; if (k >= 0) { sub.hidden = false; typeSub(sub, opt.subs[k][1]); } } };
+    Sound.glitch(); FX.flash('cy');
+    const p = v.play(); if (p) p.catch(() => { v.muted = true; v.play().catch(() => finish(false)); });
+    setTimeout(() => { if (!done && v.readyState < 2) finish(false); }, 7000);
+  });
+}
+function preloadMedia(keys) { keys.forEach(k => { if (!MEDIA[k]) return; const v = document.createElement('video'); v.preload = 'auto'; v.muted = true; v.src = MEDIA[k]; }); }
+
+/* ---------------- data store: Firebase or local demo ---------------- */
+const Store = (() => {
+  const mode = FIREBASE_CONFIG ? 'firebase' : 'local'; let fs = null;
+  const ch = ('BroadcastChannel' in window) ? new BroadcastChannel('chronos-v2') : null;
+  const listeners = new Set(); const notify = m => listeners.forEach(fn => fn(m));
+  if (ch) ch.onmessage = e => notify(e.data);
+  addEventListener('storage', e => { if (e.key && e.key.startsWith('chronos2:')) notify({key:e.key}); });
+  const post = m => { if (ch) ch.postMessage(m); notify(m); };
+  const load = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  async function init() { if (mode !== 'firebase') return; await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js'); await load('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js'); firebase.initializeApp(FIREBASE_CONFIG); fs = firebase.firestore(); }
+  const sKey = c => 'chronos2:session:' + c, tKey = (c,t) => 'chronos2:team:' + c + ':' + t;
+  function onClass(cb) { if (mode === 'local') { cb('demo'); return () => {}; } return fs.doc('chronos/config').onSnapshot(d => cb((d.exists && d.data().classId) || 'demo')); }
+  function setClass(id) { if (mode === 'local') return; return fs.doc('chronos/config').set({classId:id, at:now()}, {merge:true}); }
+  function onSession(c, cb) { if (mode === 'local') { const f = () => cb(lsGet(sKey(c)) || {phase:'lobby'}); f(); const l = m => { if (!m || m.kind === 'session' || m.key === sKey(c)) f(); }; listeners.add(l); return () => listeners.delete(l); } return fs.doc('chronos_classes/' + c).onSnapshot(d => cb(d.exists ? d.data() : {phase:'lobby'})); }
+  function patchSession(c, p) { if (mode === 'local') { lsSet(sKey(c), Object.assign(lsGet(sKey(c)) || {phase:'lobby'}, p)); post({kind:'session'}); return; } return fs.doc('chronos_classes/' + c).set(p, {merge:true}); }
+  function onTeam(c, t, cb) { if (mode === 'local') { const f = () => cb(lsGet(tKey(c,t))); f(); const l = m => { if (!m || (m.kind === 'team' && m.t === t) || m.key === tKey(c,t)) f(); }; listeners.add(l); return () => listeners.delete(l); } return fs.doc('chronos_classes/' + c + '/teams/' + t).onSnapshot(d => cb(d.exists ? d.data() : null)); }
+  function onTeams(c, cb) { if (mode === 'local') { const f = () => { const o = {}; for (let i=1;i<=TEAM_COUNT;i++){ const v = lsGet(tKey(c,'t'+i)); if (v) o['t'+i] = v; } cb(o); }; f(); const l = m => { if (!m || m.kind === 'team' || (m.key||'').startsWith('chronos2:team:')) f(); }; listeners.add(l); return () => listeners.delete(l); } return fs.collection('chronos_classes/' + c + '/teams').onSnapshot(q => { const o = {}; q.forEach(d => o[d.id] = d.data()); cb(o); }); }
+  function saveTeam(c, t, data) { if (mode === 'local') { lsSet(tKey(c,t), Object.assign(lsGet(tKey(c,t)) || {}, data)); post({kind:'team', t}); return Promise.resolve(); } return fs.doc('chronos_classes/' + c + '/teams/' + t).set(data, {merge:true}); }
+  async function resetClass(c) { if (mode === 'local') { for (let i=1;i<=TEAM_COUNT;i++){ try { localStorage.removeItem(tKey(c,'t'+i)); } catch(e) {} } lsSet(sKey(c), {phase:'lobby', resetAt:now()}); post({kind:'session'}); post({kind:'team'}); return; }
+    const q = await fs.collection('chronos_classes/' + c + '/teams').get(); const b = fs.batch(); q.forEach(d => b.delete(d.ref)); b.set(fs.doc('chronos_classes/' + c), {phase:'lobby', resetAt:now(), startedAt:null, climaxAt:null, featured:[]}); await b.commit(); }
+  return {mode, init, onClass, setClass, onSession, patchSession, onTeam, onTeams, saveTeam, resetClass};
+})();
+
+/* =========================================================
+   STUDENT CONSOLE
+   ========================================================= */
+function freshTeam(tid) {
+  return {tid, name: tid.replace('t','') + '모둠', scene:1, step:'intro', chips:{}, hintsLeft:2, hintSeen:{}, reasons:{}, blanks:{}, free:{}, dil:{pick:'', blame:[]},
+    r1:{}, r2:R2_START.slice(), r5map:{}, finished:false, finishedAt:null, reflection:'', warped:{}, crack:{}, createdAt:now(), updatedAt:now()};
+}
+const St = {tid:null, cls:'demo', T:null, sess:{phase:'lobby'}, unsub:[], msg:{}, dlgIdx:0, typing:false, sel:null, blankSel:0, slow:false,
+  kp:{val:'', order:shuffle([0,1,2,3,4,5,6,7,8,9])}, sw:[0,0,0,0], crypt:[0,0,0,0], safe:0, lev:[0,0,0,0], wireSel:null, ejected:false, crack:null, climaxRun:null};
+let saveTimer = null;
+function save(now_) { St.T.updatedAt = now(); clearTimeout(saveTimer); const go = () => Store.saveTeam(St.cls, St.tid, St.T); if (now_) go(); else saveTimer = setTimeout(go, 350); }
+function resetDevices() { St.kp = {val:'', order:shuffle([0,1,2,3,4,5,6,7,8,9])}; St.sw = [0,0,0,0]; St.crypt = [0,0,0,0]; St.safe = 0; St.lev = [0,0,0,0]; St.wireSel = null; St.ejected = false; St.wireOk = false; St.rune = ''; St.runeOrder = shuffle(RUNE_SYMS); St.cyl = CYL.start.slice(); St.sw2 = {order:shuffle(SWIPE.map((_,k)=>k)), i:0, anim:''}; St.parts = [0,0,0]; St.asm = {sel:'fridge', fridge:[], bulb:[]}; St.blankSel = 0; St.sel = null; St.msg = {}; St.dlgIdx = 0; }
+resetDevices();
+
+function startStudent(tid) {
+  preloadMedia(['warpPast','door','bus','power','village']);
+  St.tid = tid; lsSet('chronos2:myteam', tid);
+  Store.onClass(cls => {
+    St.unsub.forEach(u => u && u()); St.unsub = []; St.cls = cls; St.T = null;
+    St.unsub.push(Store.onTeam(cls, tid, remote => {
+      if (!St.T) { St.T = remote ? Object.assign(freshTeam(tid), remote) : freshTeam(tid); if (!remote) save(true); renderStudent(); return; }
+      if (remote && remote.warpReq && remote.warpReq === St.T.scene && !St.T.warped[St.T.scene]) applyWarp();
+      if (remote && remote.jumpReq && remote.jumpReq.at > (St.T.jumpAt || 0)) { const n = remote.jumpReq.scene; St.T.jumpAt = remote.jumpReq.at; for (let k=1;k<n && k<=5;k++){ St.T.chips[k] = true; if (!St.T.reasons[k]) St.T.reasons[k] = '(미리보기 이동)'; } St.T.finished = false; St.T.scene = n; St.T.step = n === 6 ? 'gate' : 'intro'; resetDevices(); save(true); renderStudent(); }
+    }));
+    St.unsub.push(Store.onSession(cls, s => {
+      const prev = St.sess; St.sess = s || {phase:'lobby'};
+      if (St.T && s && s.resetAt && St.T.createdAt < s.resetAt) { St.T = freshTeam(tid); resetDevices(); save(true); }
+      if (prev.phase !== St.sess.phase || prev.climaxAt !== St.sess.climaxAt || prev.startedAt !== St.sess.startedAt) renderStudent();
+    }));
+  });
+  setInterval(tickStudent, 1000);
+}
+const elapsedSec = () => St.sess && St.sess.startedAt ? (now() - St.sess.startedAt)/1000 : 0;
+
+function rail() {
+  const T = St.T, left = St.sess.startedAt ? GAME_SEC - elapsedSec() : GAME_SEC;
+  const slot = i => `<div class="chipslot ${i===3?'kw':''} ${T.chips[i]?'on':''}" id="slot${i}" style="--c:var(--c-${i})">${T.chips[i] ? CHIP[i] : (i===3?'KEY':'?')}</div>`;
+  return `<aside class="rail">
+    <div class="frame"><div class="logo">CHRONOS<small>${esc(T.name)} · 크로노스 콘솔</small></div></div>
+    <div class="frame"><div class="lbl">Time remaining</div><div class="timer ${left<300?'low':''}" id="timer">${fmt(left)}</div><div class="bar"><i id="tbar" style="width:${Math.max(0,Math.min(100,left/GAME_SEC*100))}%"></i></div></div>
+    <div class="frame"><div class="lbl">Memory chips</div><div class="chips">${[1,2,3,4,5].map(slot).join('')}</div></div>
+    <div class="frame routebox"><div class="lbl">Route</div><div class="route">${[1,2,3,4,5,6].map(i => `<div class="rstop ${i===T.scene&&!T.finished?'here':''} ${(i<6&&T.chips[i])||(i===6&&T.finished)?'done':''}" style="--c:var(--c-${i})"><i>${i===6?'RTN':'S#'+i}</i><span>${PLACE[i]}</span><b>${(i<6&&T.chips[i])||(i===6&&T.finished)?'✓':''}</b></div>`).join('')}</div></div>
+    <div class="toggles"><button class="tg" id="sndBtn" aria-pressed="${Sound.on}">SFX ${Sound.on?'ON':'OFF'}</button><button class="tg" id="humBtn" aria-pressed="${Sound.humming}">HUM ${Sound.humming?'ON':'OFF'}</button></div>
+  </aside>`;
+}
+function scene(i, comm, body) {
+  return `<main class="scene" style="--c:var(--c-${i})">
+    <div class="frame shead"><div class="tag">${TAG[i]} · ${WHEN[i]}</div><h1 class="rgb">${PLACE[i]}</h1><div class="unit">${UNIT[i]}</div></div>
+    ${comm || ''}${body ? `<div class="frame mission">${body}</div>` : ''}</main>`;
+}
+function commHTML(lines, idx, nextLabel) {
+  const [who, txt] = lines[idx]; const cls = who === 'teki' ? '' : who;
+  const name = who === 'teki' ? 'COMM LINK · TEKI' : who === 'doc' ? 'COMM LINK · 한 박사' : 'COMM LINK · 마을 촌장';
+  return `<div class="frame comm ${cls}" id="dlg"><div class="eye ${cls}"></div><div><div class="who">${name} <span class="muted">${idx+1}/${lines.length}</span></div><div class="txt" id="dtxt" data-full="${esc(txt)}"></div>
+    <div class="row" style="margin-top:8px"><button class="btn small" id="dnext" data-act="dnext" hidden>${idx < lines.length-1 ? 'NEXT ▸' : (nextLabel || '확인 ▸')}</button><span class="muted small" id="dskip">탭하면 빨리 넘어가요</span></div></div></div>`;
+}
+const commStatic = (txt) => `<div class="frame comm"><div class="eye"></div><div><div class="who">COMM LINK · TEKI</div><div class="txt">${txt}</div></div></div>`;
+async function typeLine() {
+  const el = $('#dtxt'); if (!el) return; const full = el.dataset.full; St.typing = true; el.innerHTML = '';
+  const span = document.createElement('span'), caret = document.createElement('span'); caret.className = 'caret'; el.append(span, caret);
+  for (let i=0; i<full.length; i++) { if (!St.typing || !document.contains(el)) break; span.textContent = full.slice(0, i+1); if (i % 2 === 0) Sound.type(); await sleep(reduced ? 0 : 26); }
+  if (document.contains(el)) { span.textContent = full; caret.remove(); const n = $('#dnext'); if (n) n.hidden = false; const s = $('#dskip'); if (s) s.hidden = true; }
+  St.typing = false; if (Math.random() < .5) { FX.glitch($('.eye')); }
+}
+
+function renderStudent() {
+  const app = $('#app'), T = St.T;
+  if (!T) { app.innerHTML = `<div class="center"><div class="inner"><div class="radar"></div><p class="muted">크로노스에 연결하는 중…</p></div></div>`; return; }
+  const ph = St.sess.phase || 'lobby';
+  if (ph === 'climax' || ph === 'launch') return renderClimax();
+  if (ph === 'ending' || ph === 'credits') return renderEnding();
+  if (ph === 'lobby' || ph === 'opening' || !St.sess.startedAt) return renderWait(ph);
+  const main = T.finished ? returnWait() : sceneView();
+  app.innerHTML = `<div class="shell">${rail()}${main}</div>` + modalHTML();
+  afterRender();
+}
+function afterRender() { if ($('#dtxt')) typeLine(); if ($('#drift')) startDrift(); if ($('.wires')) drawWires(); if ($('#safe')) bindSafe(); if ($('#hold')) bindHold(); if ($('#scard')) bindSwipe(); }
+
+function renderWait(ph) {
+  const T = St.T;
+  $('#app').innerHTML = `<div class="center"><div class="inner">
+    <div class="frame pass"><div class="top">CHRONOS · BOARDING PASS</div><div class="mid">
+      <label for="tname" class="lbl">Passenger</label><input type="text" id="tname" maxlength="14" value="${esc(T.name)}">
+      <span class="muted small">출발 ${NOW_YEAR} ${esc(SCHOOL)} 기술실 · 도착 ? ? ? ?</span></div></div>
+    <div class="huge rgb" style="font-size:clamp(32px,6vw,54px)">${ph === 'opening' ? '스크린을 보세요' : '탑승 대기 중'}</div>
+    <p class="muted">${ph === 'opening' ? '한 박사의 긴급 통신이 들어오고 있습니다.' : '선생님이 크로노스를 출발시키면 화면이 바뀝니다. 탑승권 뒷면에서 내 역할을 확인하세요.'}</p>
+    <div class="radar"></div>
+    ${Store.mode === 'local' ? `<div class="notice">데모 모드: 교사 화면(주소 끝 #teacher) 없이 해 보려면 <button class="btn small" data-act="demoStart">혼자 출발하기</button></div>` : ''}
+  </div></div>`;
+}
+function returnWait() {
+  return `<main class="scene" style="--c:var(--c-6)"><div class="frame mission"><div class="center" style="min-height:56vh"><div class="inner">
+    <div class="radar"></div><div class="huge rgb" style="font-size:clamp(30px,6vw,52px)">귀환 대기</div>
+    <p>점화 완료. 다른 탑승자를 기다리는 중입니다. 선생님이 시동을 걸면 이 화면에서 카운트다운이 시작됩니다.</p>
+    <div class="hint" style="text-align:left"><b>BONUS</b>테키의 추가 질문(채점 없음) ① A4 용지를 반으로 접어도 가로·세로 비율이 같은 이유는? ② 교실에서 KS·KC 마크 찾기 ③ 우리 동네에 필요한 적정기술 한 가지는?</div>
+  </div></div></div></main>`;
+}
+function sceneView() {
+  const T = St.T, i = T.scene, s = T.step;
+  if (i === 6) return scene(6, commStatic('귀환 게이트 개방. 칩 번호를 여행 순서대로 레버에 맞추고, 미래에서 얻은 키워드를 입력한 뒤 점화 버튼을 길게 누르십시오.'), finalGate());
+  if (s === 'intro') return scene(i, commHTML(LINES[i].intro, St.dlgIdx, 'MISSION ▸'), '');
+  if (s === 'done') return scene(i, commHTML(LINES[i].done, St.dlgIdx, 'CONTINUE ▸'), '');
+  if (i === 3 && s === 'alarm') return scene(3, commHTML(LINES[3].alarm, St.dlgIdx, '결정하러 가기 ▸'), `<div class="alertbox"><div class="lbl">Emergency override · bus 07</div><p style="margin-top:6px">브레이크 고장 · 보행자 3 · 승객 1 · 시간 정지 중</p></div>`);
+  return ({1:s1, 2:s2, 3:s3, 4:s4, 5:s5})[i]();
+}
+function hintBlock(i) {
+  const T = St.T, seen = T.hintSeen[i] || 0;
+  return `<div class="row">${seen >= 1 ? '' : `<button class="btn ghost small" data-act="hint1">HINT 1 · 교실 탐색 (무료)</button>`}${seen >= 2 ? '' : `<button class="btn ghost small" data-act="hint2" ${T.hintsLeft<1?'disabled':''}>HINT 2 · 힌트권 사용 (남은 ${T.hintsLeft}장)</button>`}</div>
+    ${seen >= 1 ? `<div class="hint"><b>HINT 1</b>${HINT[i][0]}</div>` : ''}${seen >= 2 ? `<div class="hint"><b>HINT 2</b>${HINT[i][1]}</div>` : ''}`;
+}
+const msgHTML = k => St.msg[k] ? `<div class="msg ${St.msg[k][0]}" role="status">${St.msg[k][1]}</div>` : '';
+
+/* --- word-drift blank sentence --- */
+const JOSA = {'이가':['이','가','이(가)'],'을를':['을','를','을(를)'],'은는':['은','는','은(는)']};
+function josa(word, key) { const j = JOSA[key]; if (!word) return j[2]; const c = word.charCodeAt(word.length-1) - 0xAC00; if (c < 0 || c > 11171) return j[2]; return c % 28 ? j[0] : j[1]; }
+function partText(parts, b, idx) { const p = parts[idx]; if (typeof p !== 'string' || p[0] !== '#') return p; const prev = parts[idx-1]; return josa(typeof prev === 'number' ? b[prev] : '', p.slice(1,3)) + p.slice(3); }
+function blanksOf(i) { const T = St.T; const n = WB[i].parts.filter(p => typeof p === 'number').length; if (!T.blanks[i] || T.blanks[i].length !== n) T.blanks[i] = Array(n).fill(''); return T.blanks[i]; }
+function sentenceHTML(i, prefix) {
+  const b = blanksOf(i);
+  return `<div class="sentence">${prefix || ''}${WB[i].parts.map((p,idx) => typeof p === 'number' ? `<button class="blank ${b[p]?'':'empty'} ${St.blankSel===p?'sel':''}" data-act="blank" data-b="${p}">${b[p] ? esc(b[p]) : '빈칸 ' + (p+1)}</button>` : esc(partText(WB[i].parts, b, idx))).join('')}</div>`;
+}
+function wordLock(i, title, extraTop, btnLabel) {
+  const T = St.T;
+  return `<h2><span class="no">REASON LOCK</span>${title || '정답만으로는 칩이 열리지 않습니다'}</h2>
+    <p class="muted small">테키가 배울 수 있도록 빈칸을 채워 문장을 완성하세요. 빈칸을 누르고, 떠다니는 보기 중 하나를 잡으세요. 보기 중에는 함정도 있어요.</p>
+    ${extraTop || ''}${sentenceHTML(i)}
