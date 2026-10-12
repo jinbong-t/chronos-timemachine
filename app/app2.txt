@@ -135,9 +135,9 @@ const MEDIA = {
   warpPast:'media/v2_warp_past.mp4',// S#1 → S#2 워프
   hall:'media/v3_hall_panel.mp4',   // S#2 관문 감시 카메라(반복 재생)
   door:'media/v4_door_open.mp4',    // S#2 → S#3 문 열림
-  bus:null,                         // S#3 버스 경보 (예: 'media/v5_bus_alarm.mp4')
-  power:null,                       // S#3 → S#4 전력 저하
-  village:null,                     // S#4 → S#5 마을 도착
+  bus:'media/v5_bus_alarm.mp4',     // S#3 버스 경보
+  power:'media/v6_power_down.mp4',  // S#3 → S#4 전력 저하
+  village:'media/v7_village.mp4',   // S#4 → S#5 마을 도착
   launch:null                       // 교사 스크린 ④ 발사
 };
 
