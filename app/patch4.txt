@@ -82,3 +82,73 @@ f (a === 'ph-launch') { const c = Tc.cls; Store.patchSession(c, {phase:'launch'}
 ====NEW
 크립텍스에 손댈 수 없습니다
 >>>>END
+<<<<OLD
+s:center;animation:vin .35s}
+@keyframes vin{0%{opacity:0;filter:brightness(3) blur(4px)}100%{opacity:1;filter:none}}
+.vfeed.out{animation:vout .38s forwards}@keyframes vout{to{opacity:0;filter:brightness(3) blur(3px)}}
+.vfeed video{width:10
+====NEW
+s:center;animation:vin .6s ease-out}
+@keyframes vin{from{opacity:0}to{opacity:1}}
+.vfeed.out{animation:vout .7s ease-in forwards}@keyframes vout{to{opacity:0}}
+.vfeed video{width:10
+>>>>END
+<<<<OLD
+b 68%);animation:arrin .5s ease-out;cursor:pointer}
+.arrive.out{animation:arrout .45s forwards}
+@keyframes arrin{from{opacity:0;filter:brightness(3) blur(6px)}to{opacity:1;filter:none}}
+@keyframes arrout{to{opacity:0;filter:brightness(2.5) blur(4px)}}
+.arr-in{display:grid;
+====NEW
+b 68%);animation:arrin .7s ease-out;cursor:pointer}
+.arr-in{animation:arrrise .9s ease-out}
+@keyframes arrrise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.arrive.out{animation:arrout .7s ease-in forwards}
+@keyframes arrin{from{opacity:0}to{opacity:1}}
+@keyframes arrout{to{opacity:0}}
+.arr-in{display:grid;
+>>>>END
+<<<<OLD
+w.classList.add('out'); Sound.glitch(); setTimeout(() => { w.remove(); res(ok); }, 380); };
+    w.querySelecto
+====NEW
+w.classList.add('out'); setTimeout(() => w.remove(), 720); res(ok); };
+    w.querySelecto
+>>>>END
+<<<<OLD
+][1]); } } };
+    Sound.glitch(); FX.flash('cy');
+    const p = v.play(
+====NEW
+][1]); } } };
+    Sound.blip();
+    const p = v.play(
+>>>>END
+<<<<OLD
+ction arriveCard(i) {
+  return new Promise(res => {
+    const w = document.createElement('div'); w.className = 'arrive'; w.style.setProperty('--c', `var(--c-${i})`);
+    w.innerHTML = `<div class="arr-in"><div class="arr-tag">TIME JUMP COMPLETE · ${esc(TAG[i] || '')}</div><div class="arr-when">${esc(WHEN[i] || '')}</div><div class="arr-place">${esc(PLACE[i] || '')}</div><div class="arr-bar"><i></i></div></div>`;
+    document.body.appendChild(w); Sound.chip();
+    let done = false; const end = () => { if (done) return; done = true; w.classList.add('out'); setTimeout(() => { w.remove(); res(); }, 450); };
+    w.onclick = end; setTimeout(end, reduced ? 1200 : 2600);
+  });
+}
+async function gotoS
+====NEW
+ction arriveCard(i) {
+  const w = document.createElement('div'); w.className = 'arrive'; w.style.setProperty('--c', `var(--c-${i})`);
+  w.innerHTML = `<div class="arr-in"><div class="arr-tag">TIME JUMP COMPLETE · ${esc(TAG[i] || '')}</div><div class="arr-when">${esc(WHEN[i] || '')}</div><div class="arr-place">${esc(PLACE[i] || '')}</div><div class="arr-bar"><i></i></div></div>`;
+  document.body.appendChild(w); Sound.chip();
+  let skip = null; const shown = new Promise(r => { skip = r; w.onclick = r; setTimeout(r, reduced ? 1200 : 2600); });
+  return {shown, close: () => new Promise(r => { w.classList.add('out'); setTimeout(() => { w.remove(); r(); }, 720); })};
+}
+async function gotoS
+>>>>END
+<<<<OLD
+ayFeed(feed.key, feed); await FX.warp(played ? 1700 : 2000); await arriveCard(i); St.leaving = false; T.scene = i; T.step = i === 6 ? 'gate' : 'intro'; resetDevices(); save(true); renderStudent(); scrollTo(0,0); }
+function setStep(s) 
+====NEW
+ayFeed(feed.key, feed); if (!played) await FX.warp(1800); const card = arriveCard(i); await card.shown; T.scene = i; T.step = i === 6 ? 'gate' : 'intro'; resetDevices(); save(true); renderStudent(); scrollTo(0,0); await card.close(); St.leaving = false; }
+function setStep(s) 
+>>>>END
