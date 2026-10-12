@@ -4,8 +4,8 @@
 <body><div id="boot">CHRONOS BOOTING…</div>
 <script>
 (function(){
-  /* 웹앱 본문(app1~6) + 수정본(patch.json, patch2.json, patch3.txt) + AR 모듈(ar.txt)을 합쳐 실행합니다. Firebase 설정은 수정본 안에 들어 있어요. */
-  var N = 6, v = '20261013b';
+  /* 웹앱 본문(app1~6) + 수정본(patch.json, patch2.json, patch3.txt, patch4.txt) + AR 모듈(ar.txt)을 합쳐 실행합니다. Firebase 설정은 수정본 안에 들어 있어요. */
+  var N = 6, v = '20261013c';
   var get = function(u){ return fetch(u + '?v=' + v, {cache:'no-cache'}).then(function(r){ if (!r.ok) throw new Error(u + ' ' + r.status); return r.text(); }); };
   var reqs = [];
   for (var i = 1; i <= N; i++) reqs.push(get('app/app' + i + '.txt'));
@@ -13,7 +13,9 @@
   reqs.push(get('app/patch2.json').catch(function(){ return '{"replace":[]}'; }));
   reqs.push(get('app/ar.txt'));
   reqs.push(get('app/patch3.txt').catch(function(){ return ''; }));
+  reqs.push(get('app/patch4.txt').catch(function(){ return ''; }));
   Promise.all(reqs).then(function(parts){
+    var p4 = parts.pop();
     var p3 = parts.pop();
     var ar = parts.pop();
     var patch2 = JSON.parse(parts.pop());
@@ -22,7 +24,7 @@
     if (html.length !== patch.base) throw new Error('본문 길이 불일치 ' + html.length);
     patch.ops.slice().sort(function(a,b){ return b[0] - a[0]; }).forEach(function(o){ html = html.slice(0, o[0]) + o[2] + html.slice(o[0] + o[1]); });
     (patch2.replace || []).forEach(function(r){ html = html.split(r[0]).join(r[1]); });
-    p3.split('<<<<OLD\n').forEach(function(b){ var i = b.indexOf('\n====NEW\n'), j = b.indexOf('\n>>>>END\n'); if (i < 0 || j < i) return; html = html.split(b.slice(0, i)).join(b.slice(i + 9, j)); });
+    (p3 + p4).split('<<<<OLD\n').forEach(function(b){ var i = b.indexOf('\n====NEW\n'), j = b.indexOf('\n>>>>END\n'); if (i < 0 || j < i) return; html = html.split(b.slice(0, i)).join(b.slice(i + 9, j)); });
     var c1 = ar.indexOf('/*@@CSS@@*/\n'), c2 = ar.indexOf('/*@@JS@@*/\n');
     var put = function(marker, s){ var k = html.indexOf(marker); if (k >= 0) html = html.slice(0, k) + s + html.slice(k); };
     if (c1 > 0 && c2 > c1) { put('<title>', ar.slice(0, c1)); put('</style>', ar.slice(c1 + 12, c2)); put('/* ===== trick puzzles', ar.slice(c2 + 11)); }

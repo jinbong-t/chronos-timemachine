@@ -1,0 +1,54 @@
+<<<<OLD
+es button{height:56px}}
+/* footer & terms */
+#sf
+====NEW
+es button{height:56px}}
+/* arrival card */
+.arrive{position:fixed;inset:0;z-index:66;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--c) 26%,#03050b),#03050b 68%);animation:arrin .5s ease-out;cursor:pointer}
+.arrive.out{animation:arrout .45s forwards}
+@keyframes arrin{from{opacity:0;filter:brightness(3) blur(6px)}to{opacity:1;filter:none}}
+@keyframes arrout{to{opacity:0;filter:brightness(2.5) blur(4px)}}
+.arr-in{display:grid;gap:10px;justify-items:center;text-align:center;padding:16px}
+.arr-tag{font-family:var(--f-tech);font-size:12px;letter-spacing:.32em;color:var(--c)}
+.arr-when{font-family:var(--f-disp);font-size:clamp(48px,11vw,120px);line-height:1;color:var(--ink);text-shadow:-3px 0 rgba(255,53,184,.6),3px 0 rgba(41,230,255,.6)}
+.arr-place{font-size:clamp(18px,3vw,28px);font-weight:700;color:var(--c)}
+.arr-bar{width:min(320px,70vw);height:4px;background:var(--line);margin-top:8px;overflow:hidden}
+.arr-bar i{display:block;height:100%;width:100%;background:var(--c);transform-origin:left;animation:arrbar 2.4s linear forwards}
+@keyframes arrbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.arrive,.arrive.out,.arr-bar i{animation:none}}
+/* footer & terms */
+#sf
+>>>>END
+<<<<OLD
+sub');
+    v.src = src; v.volume = opt.volume ==
+====NEW
+sub');
+    v.src = src; if (opt.rate) v.playbackRate = opt.rate; v.volume = opt.volume ==
+>>>>END
+<<<<OLD
+p(1000); el.remove();
+}
+async function gotoScene(i, feed) { const T = St.T; let played = false; if (feed) played = await playFeed(feed.key, feed); if (!played) await FX.warp(1300); else FX.flash('cy'); T.scene = i; T.step = 
+====NEW
+p(1000); el.remove();
+}
+function arriveCard(i) {
+  return new Promise(res => {
+    const w = document.createElement('div'); w.className = 'arrive'; w.style.setProperty('--c', `var(--c-${i})`);
+    w.innerHTML = `<div class="arr-in"><div class="arr-tag">TIME JUMP COMPLETE · ${esc(TAG[i] || '')}</div><div class="arr-when">${esc(WHEN[i] || '')}</div><div class="arr-place">${esc(PLACE[i] || '')}</div><div class="arr-bar"><i></i></div></div>`;
+    document.body.appendChild(w); Sound.chip();
+    let done = false; const end = () => { if (done) return; done = true; w.classList.add('out'); setTimeout(() => { w.remove(); res(); }, 450); };
+    w.onclick = end; setTimeout(end, reduced ? 1200 : 2600);
+  });
+}
+async function gotoScene(i, feed) { const T = St.T; if (St.leaving) return; St.leaving = true; let played = false; if (feed) played = await playFeed(feed.key, feed); await FX.warp(played ? 1700 : 2000); await arriveCard(i); St.leaving = false; T.scene = i; T.step = 
+>>>>END
+<<<<OLD
+hes */
+    case 'sw': { const k = +b.dataset.k; St.sw[k] = St.sw[k] ? 0 : 1; Sound.clack(); renderStudent(); if (St.sw.join('') === CODES.issue) { (async () => { Sound.power(); await sleep(200); const m = $('#swmeter'); if (m) m.style.width = '100%'; $('#devmsg').innerHTML = '<div class="grant">POWER RESTORED</div>'; Sound.grant(); await sleep(700); gotoScene(3, {key:'door', label:'GATE 2050 · POWER RESTORED', subs:[[0.2,'전원 복구. 2050년의 문이 열립니다.']]}); })(); } return; 
+====NEW
+hes */
+    case 'sw': { if (St.leaving || St.sw.join('') === CODES.issue) return; const k = +b.dataset.k; St.sw[k] = St.sw[k] ? 0 : 1; Sound.clack(); renderStudent(); if (St.sw.join('') === CODES.issue) { (async () => { Sound.power(); await sleep(200); const m = $('#swmeter'); if (m) m.style.width = '100%'; $('#devmsg').innerHTML = '<div class="grant">POWER RESTORED</div>'; Sound.grant(); await sleep(700); gotoScene(3, {key:'door', label:'GATE 2050 · POWER RESTORED', rate:.8, subs:[[0.2,'전원 복구. 2050년의 문이 열립니다.'],[3.2,'시간 터널 좌표 고정. 목적지 2050년 서울.']]}); })(); } return; 
+>>>>END
