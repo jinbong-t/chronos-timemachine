@@ -1,0 +1,178 @@
+    <div class="frame device"><div class="dlabel">NAV RUNE PAD</div><div class="screen" id="runescreen" style="letter-spacing:.4em">${(St.rune + '····').slice(0,4)}</div><div class="runes">${St.runeOrder.map(x => `<button data-act="rune" data-v="${x}" aria-label="기호 ${x}">${x}</button>`).join('')}</div><button class="btn ghost small" data-act="runeClr">초기화</button><div id="devmsg"></div></div></div>`);
+}
+function cylView() {
+  const off = St.cyl, at = (arr, o, r) => arr[(r + o) % 4];
+  const hit = r => CYL.change.indexOf(at(CYL.change, off[0], r)) === r && CYL.tech.indexOf(at(CYL.tech, off[1], r)) === r;
+  return scene(2, commStatic('시대 정렬 실린더. 세 줄이 모두 맞아야 2050 전시실 통로가 열립니다.'), `<h2><span class="no">TRICK 02</span>시대 정렬 실린더</h2>
+    <p>가운데와 오른쪽 실린더를 돌려 <b>시대 → 사회 변화 → 대표 기술</b>이 한 줄로 맞게 하세요. 창문 위 <b>연표 띠</b>의 그림이 단서예요.</p>
+    <div class="cyl"><div class="col"><div class="lbl">ERA</div>${CYL.eras.map(e => `<div class="cell era">${e}</div>`).join('')}</div>
+      <div class="col"><div class="rot"><button data-act="cyl" data-k="0" data-d="1" aria-label="가운데 실린더 위로">▲</button><button data-act="cyl" data-k="0" data-d="3" aria-label="가운데 실린더 아래로">▼</button></div>${[0,1,2,3].map(r => `<div class="cell">${at(CYL.change, off[0], r)}</div>`).join('')}</div>
+      <div class="col"><div class="rot"><button data-act="cyl" data-k="1" data-d="1" aria-label="오른쪽 실린더 위로">▲</button><button data-act="cyl" data-k="1" data-d="3" aria-label="오른쪽 실린더 아래로">▼</button></div>${[0,1,2,3].map(r => `<div class="cell">${at(CYL.tech, off[1], r)}</div>`).join('')}</div></div>
+    <div class="row"><button class="btn" data-act="cylCheck">실린더 고정 ▸</button></div><div id="devmsg"></div>`);
+}
+function swipeView() {
+  const w = St.sw2, k = w.order[w.i], c = SWIPE[k];
+  return scene(3, commStatic('시동 키워드 해독 완료. 2050년 시스템에 접속하려면 시민 판독 테스트를 통과해야 합니다. 미래일보 2면 ‘2050년의 하루’를 읽으십시오.'), `<h2><span class="no">TRICK 03</span>미래 판독기</h2>
+    <p>카드의 문장이 그 기술의 <b>좋은 점</b>이면 오른쪽, <b>걱정되는 점</b>이면 왼쪽으로 밀어 보내세요. 틀리면 카드가 튕겨 돌아옵니다. (${w.i}/${SWIPE.length})</p>
+    <div class="deck" id="deck">${c ? `<div class="scard ${w.anim}" id="scard"><div class="t">${c[0]}</div><div class="s">${c[1]}</div><div class="muted small">◀ 걱정 · 좋은 점 ▶</div></div>` : ''}</div>
+    <div class="swbtns"><button class="btn" style="--c:var(--red)" data-act="swipe" data-v="W">◀ 걱정</button><button class="btn" style="--c:var(--mint)" data-act="swipe" data-v="G">좋은 점 ▶</button></div><div id="devmsg"></div>`);
+}
+function bindSwipe() {
+  const el = $('#scard'); if (!el) return; let x0 = null;
+  el.onpointerdown = e => { x0 = e.clientX; el.setPointerCapture(e.pointerId); el.style.transition = 'none'; };
+  el.onpointermove = e => { if (x0 === null) return; const dx = e.clientX - x0; el.style.transform = `translateX(${dx}px) rotate(${dx/18}deg)`; };
+  el.onpointerup = e => { if (x0 === null) return; const dx = e.clientX - x0; x0 = null; el.style.transition = ''; el.style.transform = ''; if (Math.abs(dx) > 70) doSwipe(dx > 0 ? 'G' : 'W'); };
+}
+function doSwipe(v) {
+  const w = St.sw2, c = SWIPE[w.order[w.i]]; if (!c) return;
+  if (c[2] === v) { Sound.laser(); const el = $('#scard'); if (el) el.classList.add(v === 'G' ? 'R' : 'L'); setTimeout(() => { w.i++; if (w.i >= SWIPE.length) { Sound.grant(); FX.flash('cy'); startAlarm(); } else renderStudent(); }, 330); }
+  else { const el = $('#scard'); if (el) { el.classList.remove('bad'); void el.offsetWidth; el.classList.add('bad'); } Sound.no(); FX.flash('red'); const m = $('#devmsg'); if (m) m.innerHTML = `<div class="msg no">판독 오류 · ${v==='G'?'이건 걱정되는 점이에요. 누가 불편하거나 위험해질까요?':'이건 좋은 점이에요. 누구에게 도움이 될까요?'}</div>`; }
+}
+function partsView() {
+  return scene(4, commStatic('편지 뒷면의 부품 규격 목록을 확인하십시오. 규격이 맞는 부품만 크로노스에 결합됩니다.'), `<h2><span class="no">TRICK 04</span>규격 결합 소켓</h2>
+    <p>소켓마다 플러그를 ◀ ▶로 돌려 <b>표준 규격</b>에 맞는 부품을 끼우세요. 세 개가 모두 맞아야 결합됩니다.</p>
+    <div class="sockets">${PARTS.map(([q,opts],k) => `<div class="sock" id="sock${k}"><span>${q}</span><div class="plug"><button data-act="plug" data-k="${k}" data-d="2" aria-label="이전">◀</button><b>${opts[St.parts[k]]}</b><button data-act="plug" data-k="${k}" data-d="1" aria-label="다음">▶</button></div></div>`).join('')}</div>
+    <div class="row"><button class="btn" data-act="partsCheck">부품 결합 ▸</button></div><div id="devmsg"></div>`);
+}
+function asmView() {
+  const A = St.asm, used = [...A.fridge, ...A.bulb];
+  const mats = St.asmPile || (St.asmPile = shuffle([...ASM.fridge.need, ...ASM.bulb.need, ...ASM_DECOY]));
+  const station = key => `<div class="station ${A.sel===key?'sel':''} ${A[key].length===3?'done':''}" data-act="station" data-v="${key}"><b>${ASM[key].name}</b><div class="slots3">${[0,1,2].map(n => `<span class="${A[key][n]?'f':''}">${A[key][n] || '빈 칸'}</span>`).join('')}</div></div>`;
+  return scene(5, commStatic('마을 사람들과 함께 직접 만들 차례입니다. 마을에서 구할 수 있는 재료만 쓸 수 있습니다.'), `<h2><span class="no">TRICK 05</span>마을 조립대</h2>
+    <p>세계지도의 <b>여행 엽서 뒷면</b>에 마을에 있는 것들이 적혀 있습니다. 조립대를 고르고 재료를 눌러 채우세요. 마을에서 구할 수 없는 재료는 조립대가 거부합니다.</p>
+    <div class="bench">${station('fridge')}${station('bulb')}</div>
+    <div class="pile">${mats.map((m,k) => `<button data-act="mat" data-v="${m}" style="--r:${(k%5-2)*2}deg" ${used.includes(m)?'disabled':''}>${m}</button>`).join('')}</div>
+    <div class="row"><button class="btn ghost small" data-act="asmClr">조립대 비우기</button><button class="btn" data-act="asmCheck">조립 시작 ▸</button></div><div id="devmsg"></div>`);
+}
+async function startAlarm() {
+  const T = St.T; await playFeed('bus', {label:'CITY CAM · BUS 07 · EMERGENCY', subs:[[0.2,'경고. 시내버스 7번 제동 장치 이상.']]});
+  T.step = 'alarm'; St.dlgIdx = 0; St.msg = {}; save(true); FX.flash('red'); FX.alarm(true); Sound.alarm(); FX.shake(); renderStudent(); setTimeout(() => FX.alarm(false), 6000);
+}
+function finalGate() {
+  return `<h2><span class="no">FINAL</span>귀환 점화</h2><div class="split"><div style="display:grid;gap:10px"><p>① 기억 칩 번호를 <b>여행 순서대로</b>(출발 → 과거 → 현재 → 지구촌) 레버 4개에 맞추세요.</p><p>② 미래에서 얻은 <b>시동 키워드</b>를 입력하세요.</p><p>③ 점화 버튼을 <b>끝까지 길게</b> 누르세요.</p></div>${levers()}</div>`;
+}
+function modalHTML() {
+  if (!St.crack) return '';
+  return `<div class="modal" role="dialog" aria-modal="true"><div class="frame glitch"><div class="deny" style="font-size:15px">TEMPORAL CRACK DETECTED</div><p>이 장면에 머문 시간이 길어 시간선이 흔들립니다. 교실에 단서가 있어요.</p><div class="hint"><b>HINT 1</b>${HINT[St.crack][0]}</div><p class="muted small">그래도 막히면 선생님께 ‘타임워프’를 요청하세요.</p><div class="row"><button class="btn" data-act="closeCrack">계속하기</button></div></div></div>`;
+}
+
+async function flyChip(i) {
+  const el = document.createElement('div'); el.className = 'fly'; el.style.setProperty('--c', `var(--c-${i})`); el.textContent = 'CHIP ' + '①②③④⑤'[i-1] + ' ' + CHIP[i];
+  el.style.left = (innerWidth/2 - 80) + 'px'; el.style.top = (innerHeight/2 - 30) + 'px'; el.style.transform = 'scale(1.6)'; document.body.appendChild(el); Sound.chip(); await sleep(550);
+  const s = $('#slot' + i); if (s) { const r = s.getBoundingClientRect(); el.style.left = r.left + 'px'; el.style.top = r.top + 'px'; el.style.transform = 'scale(.5)'; el.style.opacity = '.15'; }
+  await sleep(1000); el.remove();
+}
+async function gotoScene(i, feed) { const T = St.T; let played = false; if (feed) played = await playFeed(feed.key, feed); if (!played) await FX.warp(1300); else FX.flash('cy'); T.scene = i; T.step = i === 6 ? 'gate' : 'intro'; resetDevices(); save(true); renderStudent(); scrollTo(0,0); }
+function setStep(s) { St.T.step = s; St.dlgIdx = 0; St.msg = {}; St.blankSel = 0; save(); renderStudent(); }
+async function grant(i) { St.T.chips[i] = true; save(true); renderStudent(); await flyChip(i); }
+function applyWarp() { const T = St.T, i = T.scene; T.warped[i] = true; if (i <= 5) { T.chips[i] = true; if (!T.reasons[i]) T.reasons[i] = '(타임워프 — 엔딩 전에 작성)'; } FX.glitch($('#app')); save(true); gotoScene(i === 5 ? 6 : i + 1); }
+
+function tickStudent() {
+  const T = St.T; if (!T || !St.sess.startedAt) return;
+  const left = GAME_SEC - elapsedSec(), t = $('#timer'), b = $('#tbar'); if (t) { t.textContent = fmt(left); t.classList.toggle('low', left < 300); } if (b) b.style.width = Math.max(0, left/GAME_SEC*100) + '%';
+  if (St.sess.phase !== 'play' || T.finished) return;
+  const dl = DEADLINE_MIN[T.scene];
+  if (dl && elapsedSec() > dl*60 && !T.crack[T.scene] && !T.chips[T.scene]) { T.crack[T.scene] = true; T.hintSeen[T.scene] = Math.max(1, T.hintSeen[T.scene] || 0); St.crack = T.scene; save(); FX.power(); Sound.glitch(); renderStudent(); }
+}
+
+/* --- climax & ending --- */
+function renderClimax() {
+  const s = St.sess, app = $('#app');
+  if (s.phase === 'launch') { FX.freeze(false); app.innerHTML = `<div class="center"><div class="inner"><div class="huge rgb">LAUNCH</div></div></div>`; FX.flash(); FX.warp(1700); return; }
+  app.innerHTML = `<div class="center"><div class="inner"><div class="lbl">Chronos · ignition sequence</div><div class="count" id="cnum">…</div><p id="cmsg" class="muted">${St.T.finished ? '점화 코드 확인 완료' : '크로노스가 모든 탑승자를 태웁니다'}</p></div></div>`;
+  runCountdown(s.climaxAt, $('#cnum'), $('#cmsg'), () => St.climaxRun, v => St.climaxRun = v);
+}
+function runCountdown(at, numEl, msgEl, getRun, setRun) {
+  const id = Symbol(); setRun(id);
+  (async () => { const start = (at || now()) + 1200, nums = ['5','4','3','2'];
+    for (let k=0;k<4;k++){ const w = start + k*1300 - now(); if (w > 0) await sleep(w); if (getRun() !== id || !document.contains(numEl)) return; if (start + (k+1)*1300 < now()) continue; numEl.textContent = nums[k]; Sound.beep(k===3); FX.glitch(numEl); }
+    const w = start + 4*1300 - now(); if (w > 0) await sleep(w); if (getRun() !== id || !document.contains(numEl)) return;
+    FX.freeze(true); Sound.glitch(); Sound.no(); numEl.textContent = '?'; numEl.style.color = 'var(--red)';
+    msgEl.innerHTML = `<b class="deny" style="font-size:16px">ERROR · 마지막 숫자 ‘1’이 없습니다</b><br>이번 여행에서 단 한 번도 지워지지 않은 것. 모든 기술의 시작이자 이유인 것.<br><span style="font-size:1.35em;color:var(--ink)">‘1’은 무엇입니까?</span>`;
+  })();
+}
+function twistLine(T) { const d = T.dil || {}; if (!d.self) return ''; const bm = {P:'승객 보호',W:'보행자 보호'}; return `조건 변경 → 내가 승객이면 ${d.self}${d.self!==d.pick?'(바뀜)':''} · 나는 ${bm[d.buyMe]||'-'} / 남은 ${bm[d.buyOthers]||'-'} · 규칙은 ${d.who||'-'}`; }
+function classVote(teams) {
+  const ts = Object.values(teams).filter(T => T.dil && T.dil.pick); if (!ts.length) return '';
+  const n = ts.length, cnt = f => ts.filter(f).length, bar = (label, v, c) => `<div class="vrow"><span>${label}</span><div class="vbar" style="--c:${c}"><i style="width:${n?v/n*100:0}%"></i></div><b>${v}</b></div>`;
+  const who = {}; ts.forEach(T => { if (T.dil.who) who[T.dil.who] = (who[T.dil.who]||0) + 1; });
+  return `<div class="vote"><div class="lbl">Our class decisions · ${n} teams</div>
+    ${bar('A · 그대로 직진', cnt(T => T.dil.pick==='A'), 'var(--cyan)')}${bar('B · 방향 전환', cnt(T => T.dil.pick==='B'), 'var(--mag)')}
+    ${bar('승객이 나라면 선택을 바꿈', cnt(T => T.dil.self && T.dil.self!==T.dil.pick), 'var(--amber)')}
+    ${bar('나와 남에게 다른 버스를 원함', cnt(T => T.dil.buyMe && T.dil.buyOthers && T.dil.buyMe!==T.dil.buyOthers), 'var(--red)')}
+    ${Object.entries(who).map(([k,v]) => bar('규칙은 ' + ({회사:'자동차 회사',법:'법(국회·정부)',탑승자:'탑승자',시민:'시민 토론·투표'}[k]||k), v, 'var(--mint)')).join('')}</div>`;
+}
+function dilSentence(T) { const d = T.dil || {}; return d.pick ? `우리 모둠은 ${d.pick==='A'?'직진':'방향 전환'}을 선택했다. ${T.reasons[3] || ''} (책임: ${(d.blame||[]).join(', ')||'-'})` : (T.reasons && T.reasons[3]) || ''; }
+function renderEnding() {
+  FX.freeze(false); const T = St.T, done = !!T.reflection;
+  $('#app').innerHTML = `<div class="shell">${rail()}<main class="scene" style="--c:var(--c-6)"><div class="frame shead"><div class="tag">ENDING · ${NOW_YEAR} ${esc(SCHOOL)} 기술실</div><h1 class="rgb">귀환 성공</h1><div class="unit">고장 난 건 타임머신이 아니라,<br>사람을 잊어버린 기술이었다.</div></div>
+    ${commStatic('저는 이제 기술을 지우지 않겠습니다. 대신 묻겠습니다. <b>이 기술은 누구를 위한 것인가요?</b>')}
+    <div class="frame mission"><h2><span class="no">REFLECTION</span>오늘 여행에서 근거를 하나 들어 한 문장으로</h2>
+      ${done ? `<div class="msg ok">전송 완료: “${esc(T.reflection)}”</div>` : `<textarea id="refl" maxlength="400" placeholder="기술은 누구를 위해 있어야 할까?"></textarea><div class="row"><button class="btn" data-act="refl">테키에게 전송 ▸</button></div>${msgHTML('refl')}`}
+      <div class="lbl">Our reason log</div>${[1,2,3,4,5].map(i => `<p class="small"><b style="color:var(--c-${i})">S#${i} ${KTAG[i]}</b> ${esc(i===3 ? dilSentence(T) : (T.reasons[i] || '—'))}</p>`).join('')}
+    </div></main></div>`;
+}
+
+/* --- student events --- */
+function studentClick(e) {
+  if (e.target.id === 'sndBtn') { const on = Sound.toggle(); renderStudent(); return; }
+  if (e.target.id === 'humBtn') { Sound.hum(!Sound.humming); renderStudent(); return; }
+  const b = e.target.closest('[data-act]');
+  if (!b) { if (St.typing && e.target.closest('#dlg')) St.typing = false; return; }
+  const a = b.dataset.act, T = St.T; if (!T) return; const i = T.scene;
+  if (!['word','kp','sw','ring','safe','lev','r1','r2','vil','tech'].includes(a)) Sound.click();
+  switch (a) {
+    case 'demoStart': Store.patchSession(St.cls, {phase:'play', startedAt:now()}); return;
+    case 'dnext': {
+      const set = T.step === 'intro' ? LINES[i].intro : T.step === 'done' ? LINES[i].done : T.step === 'alarm' ? LINES[3].alarm : null;
+      if (set && St.dlgIdx < set.length - 1) { St.dlgIdx++; renderStudent(); return; }
+      if (T.step === 'intro') return setStep(i === 3 ? 'keyword' : i === 5 ? 'match' : 'puzzle');
+      if (T.step === 'alarm') { FX.alarm(false); FX.freeze(true); setTimeout(() => FX.freeze(false), 900); return setStep('dilemma'); }
+      if (T.step === 'done') { if (i === 1) return setStep(EXTRA[1] ? 'rune' : 'gate'); if (i === 2) return setStep(EXTRA[2] ? 'wheel' : 'gate'); if (i === 3) { FX.power(); setTimeout(() => gotoScene(4, {key:'power', label:'CHRONOS · POWER FAILURE', subs:[[0.2,'전력 저하. 예비 부품이 필요합니다.']]}), 1000); return; } if (i === 4) return setStep(EXTRA[4] ? 'parts' : 'letter'); if (i === 5) return gotoScene(6); }
+      return; }
+    case 'hint1': T.hintSeen[i] = Math.max(1, T.hintSeen[i] || 0); Sound.data(); save(); renderStudent(); return;
+    case 'hint2': if (T.hintsLeft > 0) { T.hintsLeft--; T.hintSeen[i] = 2; Sound.data(); save(); renderStudent(); } return;
+    case 'r1': Sound.blip(); T.r1[b.dataset.k] = b.dataset.c; save(); renderStudent(); return;
+    case 'check1': { const n = R1.filter(([x,c],k) => T.r1[k] === c).length; Sound.scan();
+      if (Object.keys(T.r1).length < 8) { St.msg.p = ['no','아직 분류하지 않은 사례가 있어요.']; FX.deny(); renderStudent(); return; }
+      if (n === 8) { Sound.ok(); FX.flash('cy'); setStep('reason'); grant(1); } else { St.msg.p = ['no', `ACCESS DENIED · 8개 중 ${n}개가 맞았어요. 테키가 아직 헷갈려 합니다.`]; FX.deny(); renderStudent(); } return; }
+    case 'r2': { Sound.blip(); const p = +b.dataset.p; if (St.sel === null) St.sel = p; else { const o = T.r2; [o[St.sel], o[p]] = [o[p], o[St.sel]]; St.sel = null; Sound.servo(); save(); } renderStudent(); return; }
+    case 'check2': { Sound.scan(); const ok = T.r2.every((v,k) => v === k); if (ok) { Sound.ok(); FX.flash('cy'); setStep('reason'); grant(2); } else { const n = T.r2.filter((v,k) => v === k).length; St.msg.p = ['no', `SYNC FAILED · 6개 중 ${n}개가 제자리에 있어요.`]; FX.deny(); renderStudent(); } return; }
+    case 'blank': { const k = +b.dataset.b, bl = blanksOf(i); if (bl[k]) { bl[k] = ''; save(); } St.blankSel = k; renderStudent(); return; }
+    case 'word': { const bl = blanksOf(i), w = b.dataset.w; if (bl.includes(w)) return; let k = St.blankSel; if (bl[k]) k = bl.indexOf(''); if (k < 0) { FX.glitch(b); Sound.no(); return; } bl[k] = w; Sound.laser(); const nxt = bl.indexOf(''); St.blankSel = nxt < 0 ? k : nxt; save(); renderStudent(); return; }
+    case 'slow': St.slow = !St.slow; Sound.servo(); renderStudent(); return;
+    case 'freeToggle': if (T.free[i] != null) delete T.free[i]; else T.free[i] = ''; save(); renderStudent(); return;
+    case 'take': { const k = +b.dataset.i, [ok, txt] = checkWords(k); if (!ok) { St.msg.take = ['no', txt]; FX.deny(); renderStudent(); return; } T.reasons[k] = txt; Sound.grant(); FX.flash('cy'); setStep('done'); return; }
+    case 'take3': { if (!T.dil.pick) { St.msg.take = ['no','먼저 A 또는 B를 선택하세요.']; FX.deny(); renderStudent(); return; } const [ok, txt] = checkWords(3); if (!ok) { St.msg.take = ['no', txt]; FX.deny(); renderStudent(); return; }
+      T.reasons[3] = txt; T.dil.twk = 0; T.dil.twDone = false; Sound.grant(); FX.flash('cy'); setStep('twist'); return; }
+    case 'reveal': (async () => { const box = $('#revealbox'); for (const n of ['3','2','1']) { if (!document.contains(box)) return; box.innerHTML = `<div class="bigcount">${n}</div>`; Sound.beep(n==='1'); await sleep(800); } if (document.contains(box)) box.innerHTML = `<div class="bigcount" style="font-size:36px">공개!</div>`; })(); return;
+    case 'pick': T.dil.pick = b.dataset.v; save(); renderStudent(); return;
+    case 'twist': T.dil[b.dataset.key] = b.dataset.v; Sound.data(); save(); renderStudent(); return;
+    case 'twistNext': { const k = T.dil.twk || 0; if (k < 2) { T.dil.twk = k + 1; Sound.servo(); save(); renderStudent(); } else { T.dil.twDone = true; save(); setStep('done'); grant(3); } return; }
+    case 'blame': { const l = T.dil.blame, v = b.dataset.v; l.includes(v) ? l.splice(l.indexOf(v),1) : l.push(v); save(); renderStudent(); return; }
+    /* keypad */
+    case 'kp': { if (St.kp.val.length >= 4) return; St.kp.val += b.dataset.d; Sound.dtmf(+b.dataset.d); St.kp.order = shuffle(St.kp.order); renderStudent(); return; }
+    case 'kpclr': St.kp.val = ''; renderStudent(); return;
+    case 'kpent': if (St.kp.val === CODES.coord) { Sound.grant(); $('#devmsg').innerHTML = '<div class="grant">ACCESS GRANTED</div>'; FX.decrypt($('#kpscreen'), 'BC' + CODES.coord); setTimeout(() => gotoScene(2, {key:'warpPast', label:'TIME TUNNEL · BC 3500', subs:[[0.3,'좌표 확인. 시간 터널에 진입합니다.'],[6.5,'도착 지점: 기원전 3500년, 인류 기술의 기록 보관소.']]}), 900); } else { $('#devmsg').innerHTML = '<div class="deny">ACCESS DENIED</div>'; St.kp.val = ''; FX.deny($('.kp')); setTimeout(renderStudent, 700); } return;
+    /* switches */
+    case 'sw': { const k = +b.dataset.k; St.sw[k] = St.sw[k] ? 0 : 1; Sound.clack(); renderStudent(); if (St.sw.join('') === CODES.issue) { (async () => { Sound.power(); await sleep(200); const m = $('#swmeter'); if (m) m.style.width = '100%'; $('#devmsg').innerHTML = '<div class="grant">POWER RESTORED</div>'; Sound.grant(); await sleep(700); gotoScene(3, {key:'door', label:'GATE 2050 · POWER RESTORED', subs:[[0.2,'전원 복구. 2050년의 문이 열립니다.']]}); })(); } return; }
+    /* cryptex */
+    case 'ring': { const k = +b.dataset.k, L = CRYPT[k].length; St.crypt[k] = (St.crypt[k] + (+b.dataset.d) + L) % L; Sound.servo(); renderStudent(); return; }
+    case 'crypt': { const word = St.crypt.map((v,k) => CRYPT[k][v]).join(''); if (word === CODES.keyword) { Sound.grant(); document.querySelectorAll('.ring').forEach(r => r.classList.add('ok')); $('#devmsg').innerHTML = '<div class="grant" id="dg">DECRYPTED</div>'; FX.decrypt($('#dg'), 'DECRYPTED · 인간중심'); setTimeout(() => { if (EXTRA[3]) { setStep('swipe'); } else startAlarm(); }, 1400); } else { $('#devmsg').innerHTML = '<div class="deny">WRONG SEQUENCE</div>'; FX.deny($('.crypt')); } return; }
+    /* safe */
+    case 'safe': { St.safe += +b.dataset.d; Sound.tick(); const s = $('#safesvg'); if (s) s.style.transform = `rotate(${-St.safe*36}deg)`; $('#safeval').textContent = ((St.safe%10)+10)%10; return; }
+    case 'safeOpen': { const v = ((St.safe%10)+10)%10; if (v === CODES.checksum) { Sound.grant(); $('#devmsg').innerHTML = '<div class="grant">VAULT OPEN</div>'; const s = $('#safesvg'); if (s) { s.style.transition = 'transform 1s'; s.style.transform = `rotate(${-St.safe*36 - 720}deg)`; } setTimeout(() => { setStep('reason'); grant(4); }, 1200); } else { $('#devmsg').innerHTML = '<div class="deny">VAULT LOCKED</div>'; FX.deny($('#safe')); } return; }
+    /* map */
+    case 'maptarget': if (b.dataset.v === '지구 반대편 마을') { Sound.grant(); FX.flash('cy'); setTimeout(() => gotoScene(5, {key:'village', label:'GLOBAL LINK · FAR SIDE OF THE EARTH', subs:[[0.3,'지구 반대편 마을에 접근 중.']]}), 500); } else { St.msg.p = ['no','편지를 다시 읽어 보세요. 마지막 두 줄에 답이 있어요.']; FX.deny(); renderStudent(); } return;
+    /* wires */
+    case 'vil': { if (St.wireOk) return; St.wireSel = +b.dataset.k; Sound.blip(); renderStudent(); return; }
+    case 'tech': { const n = +b.dataset.n, allOk = St.wireOk;
+      if (allOk) { if (n === 2) { St.ejected = true; Sound.laser(); Sound.grant(); FX.flash('cy'); const el = $('#tech2'); if (el) { el.style.transition = 'transform .8s, opacity .8s'; el.style.transform = 'translateX(120%) rotate(8deg)'; el.style.opacity = '0'; } setTimeout(() => { setStep(EXTRA[5] ? 'asm' : 'reason'); grant(5); }, 900); } else { St.msg.p = ['no','이 모듈은 마을에서 쓰이고 있어요. 붉게 깜박이는 모듈을 배출하세요.']; FX.deny(); renderStudent(); } return; }
+      if (St.wireSel === null) { St.msg.p = ['no','먼저 왼쪽에서 마을을 누르세요.']; Sound.no(); renderStudent(); return; }
+      T.r5map[St.wireSel] = n; St.wireSel = null; Sound.laser(); save(); St.msg = {}; renderStudent(); return; }
+    case 'clearWires': if (St.wireOk) return; T.r5map = {}; St.wireSel = null; Sound.power(); save(); renderStudent(); return;
+    case 'check5': { Sound.scan(); const n = VIL.filter(([v,t],k) => String(T.r5map[k]) === String(t)).length; if (n === 4) { St.wireOk = true; Sound.ok(); FX.flash('cy'); renderStudent(); } else { St.msg.p = ['no', `CONNECTION FAULT · 마을 촌장들이 고개를 저습니다. 4곳 중 ${n}곳이 맞았어요.`]; FX.deny(); renderStudent(); } return; }
+    /* levers */
+    case 'lev': { const k = +b.dataset.k; St.lev[k] = Math.max(0, Math.min(9, St.lev[k] + (+b.dataset.d))); Sound.servo(); const v = $('#lv'+k); if (v) { v.textContent = St.lev[k]; v.parentElement.querySelector('.track i').style.height = (St.lev[k]*10+5) + '%'; } return; }
+    case 'rune': { if (St.rune.length >= 4) return; St.rune += b.dataset.v; Sound.blip(); const sc = $('#runescreen'); if (sc) sc.textContent = (St.rune + '····').slice(0,4);
+      if (St.rune.length === 4) { if (St.rune === RUNE_CODE) { Sound.grant(); $('#devmsg').innerHTML = '<div class="grant">NAV ONLINE</div>'; FX.flash('cy'); setTimeout(() => setStep('gate'), 900); } else { $('#devmsg').innerHTML = '<div class="deny">RUNE MISMATCH</div><p class="small muted">필요를 알아차림 → 아이디어 → 만들기 → 평가 순서를 다시 떠올려 보세요.</p>'; FX.deny($('.runes')); St.rune = ''; setTimeout(() => { const s2 = $('#runescreen'); if (s2) s2.textContent = '····'; }, 500); } } return; }
