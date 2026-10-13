@@ -10,3 +10,80 @@
 ====NEW
 다음 미션 — 너희 손으로 만드는 적정기술</div></div><div style="margin-top:12vh;font-family:var(--f-tech);font-size:14px;letter-spacing:.3em;color:var(--muted)">made by ${esc(MAKER)}</div></div></div>`; }
 >>>>END
+<<<<OLD
+es button{height:56px}}
+/* reflection */
+.qlbl{f
+====NEW
+es button{height:56px}}
+/* reveal: 1 = 사람 */
+.reveal{display:grid;justify-items:center;gap:14px;text-align:center}
+.rv-stage{position:relative;display:grid;place-items:center;min-height:clamp(180px,30vw,340px)}
+.rv-one,.rv-word{grid-area:1/1;font-family:var(--f-disp);line-height:1}
+.rv-one{font-family:var(--f-tech);font-weight:900;font-size:clamp(160px,30vw,340px);color:var(--amber);text-shadow:0 0 40px rgba(255,178,46,.6);animation:rvone 1.6s ease-in forwards}
+.rv-word{font-size:clamp(120px,24vw,280px);color:var(--mint);text-shadow:0 0 30px rgba(61,255,168,.75),0 0 90px rgba(61,255,168,.45);opacity:0;animation:rvword 1.4s .9s cubic-bezier(.2,.8,.2,1) forwards}
+.rv-sub{font-size:clamp(18px,2.4vw,26px);line-height:1.6;opacity:0;animation:rvsub .8s 2s ease-out forwards}.rv-sub b{color:var(--mint)}
+@keyframes rvone{0%{opacity:1;transform:scale(1)}60%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(2.4);filter:blur(8px)}}
+@keyframes rvword{from{opacity:0;transform:scale(.6);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes rvsub{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.rv-one{display:none}.rv-word,.rv-sub{opacity:1;animation:none}}
+/* reflection */
+.qlbl{f
+>>>>END
+<<<<OLD
+=== 'climax' || ph === 'launch') return renderCl
+====NEW
+=== 'climax' || ph === 'reveal' || ph === 'launch') return renderCl
+>>>>END
+<<<<OLD
+ climax & ending --- */
+function renderClimax() 
+====NEW
+ climax & ending --- */
+function revealHTML() {
+  return `<div class="reveal"><div class="lbl">Ignition code confirmed · 마지막 숫자</div><div class="rv-stage"><span class="rv-one">1</span><span class="rv-word">사람</span></div><p class="rv-sub">이번 여행에서 단 한 번도 지워지지 않은 것<br><b>모든 기술의 시작이자 이유</b></p></div>`;
+}
+function renderClimax() 
+>>>>END
+<<<<OLD
+.sess, app = $('#app');
+  if (s.phase === 'launc
+====NEW
+.sess, app = $('#app');
+  if (s.phase === 'reveal') { FX.freeze(false); app.innerHTML = `<div class="center">${revealHTML()}</div>`; FX.flash('cy'); Sound.ok(); return; }
+  if (s.phase === 'launc
+>>>>END
+<<<<OLD
+게임 진행', climax:'카운트다운', launch:'발사', ending:'엔딩'
+====NEW
+게임 진행', climax:'카운트다운', reveal:'정답 공개', launch:'발사', ending:'엔딩'
+>>>>END
+<<<<OLD
+small" style="--c:var(--red)" data-act="ph-launc
+====NEW
+small" style="--c:var(--mint)" data-act="ph-reveal">③-2 ‘사람’ 공개</button><button class="btn small" style="--c:var(--red)" data-act="ph-launc
+>>>>END
+<<<<OLD
+트다운을 시작합니다.</p></div>`;
+  if (ph === 'launch') r
+====NEW
+트다운을 시작합니다.</p></div>`;
+  if (ph === 'reveal') return revealHTML();
+  if (ph === 'launch') r
+>>>>END
+<<<<OLD
+k) FX.warp(1800); }); }
+  if (s.phase === 'credi
+====NEW
+k) FX.warp(1800); }); }
+  if (s.phase === 'reveal') { FX.freeze(false); FX.flash('cy'); Sound.ok(); setTimeout(() => Sound.chip(), 700); }
+  if (s.phase === 'credi
+>>>>END
+<<<<OLD
+ax', climaxAt: now()});
+  if (a === 'ph-launch')
+====NEW
+ax', climaxAt: now()});
+  if (a === 'ph-reveal') return Store.patchSession(Tc.cls, {phase:'reveal', revealAt: now()});
+  if (a === 'ph-launch')
+>>>>END
