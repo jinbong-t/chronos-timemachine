@@ -1,0 +1,12 @@
+<<<<OLD
+    <div><div class="lbl">Engineered by</div><div style="font-size:22px">오늘 크로노스를 고친 ${esc(Tc.cls)}반 엔지니어 여러분</div></div>
+    <div><div class="lbl">Mission control</div><div style="font-size:22px">기술 선생님 <span class="muted" style="font-size:16px">· made by ${esc(MAKER)}</span></div></div>
+    <div><div class="lbl">Special thanks</div><div style="font-size:22px">기술 안에 사람을 다시 넣어 준 모두에게</div></div>
+====NEW
+    <div><div class="lbl">Produced by</div><div style="font-size:22px">기술·가정 수업</div></div>
+>>>>END
+<<<<OLD
+다음 미션 — 너희 손으로 만드는 적정기술</div></div></div></div>`; }
+====NEW
+다음 미션 — 너희 손으로 만드는 적정기술</div></div><div style="margin-top:12vh;font-family:var(--f-tech);font-size:14px;letter-spacing:.3em;color:var(--muted)">made by ${esc(MAKER)}</div></div></div>`; }
+>>>>END
